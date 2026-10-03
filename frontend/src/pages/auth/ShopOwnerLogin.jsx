@@ -1,18 +1,22 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./ShopOwnerAuth.css";
 
 function ShopOwnerLogin() {
+  const navigate = useNavigate();
   const [role, setRole] = useState("user");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+ const handleSubmit = (e) => {
+  e.preventDefault();
 
-    console.log("Login:", {
-      role,
-    });
-  };
+  if (role === "shop_owner") {
+    navigate("/owner/dashboard");
+    return;
+  }
+
+  navigate("/");
+};
 
   return (
     <main className="auth-page">
