@@ -1,4 +1,4 @@
-function Navbar() {
+import { Link } from "react-router-dom";function Navbar() {
   return (
     <header className="navbar">
       <div className="container navbar-inner">
@@ -20,13 +20,13 @@ function Navbar() {
 
         {/* Actions */}
         <div className="nav-actions">
-          <a href="#login" className="login-link">
-            Login
-          </a>
+          <Link to="/login" className="login-link">
+  Login
+</Link>
 
-          <a href="#signup" className="nav-cta">
-            Get Started
-          </a>
+<Link to="/register" className="nav-cta">
+  Get Started
+</Link>
         </div>
 
       </div>

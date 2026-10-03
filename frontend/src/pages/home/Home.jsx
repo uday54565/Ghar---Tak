@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
@@ -36,14 +37,18 @@ function Home() {
               </p>
 
               <div className="hero-actions">
+
+                {/* Same-page section navigation */}
                 <a href="#categories" className="primary-button">
                   Explore Shops
                   <span>→</span>
                 </a>
 
-                <a href="#shop-owner" className="secondary-button">
+                {/* Shop owner registration */}
+                <Link to="/register" className="secondary-button">
                   Join as a Shop
-                </a>
+                </Link>
+
               </div>
 
               {/* TRUST POINTS */}
@@ -400,13 +405,14 @@ function Home() {
 
               </div>
 
-              <a
-                href="/signup"
+              {/* Register as shop owner */}
+              <Link
+                to="/register"
                 className="primary-button"
               >
                 Become a Seller
                 <span>→</span>
-              </a>
+              </Link>
 
             </div>
           </div>
