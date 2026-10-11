@@ -158,22 +158,60 @@ const login = async (req, res) => {
       });
     }
 
+    // Check account lock
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      return res.status(429).json({
+        success: false,
+        message: "Account temporarily locked. Try again later.",
+      });
+    }
+
+    // Reset attempts if lock has expired
+    if (user.lockUntil && user.lockUntil <= new Date()) {
+      user.loginAttempts = 0;
+      user.lockUntil = null;
+      await user.save();
+    }
+
     // Compare password
     const isPasswordCorrect = await bcrypt.compare(
       password,
       user.password
     );
 
+    // Wrong password
     if (!isPasswordCorrect) {
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+
+      if (user.loginAttempts >= 5) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+      }
+
+      await user.save();
+
+      if (user.loginAttempts >= 5) {
+        return res.status(429).json({
+          success: false,
+          message: "Account temporarily locked. Try again later.",
+        });
+      }
+
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
       });
     }
 
+    // Successful login: reset failed attempts
+    user.loginAttempts = 0;
+    user.lockUntil = null;
+
+    await user.save();
+
+    // Generate JWT
     const token = generateToken(user);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Login successful",
       token,
@@ -186,10 +224,11 @@ const login = async (req, res) => {
         isVerified: user.isVerified,
       },
     });
+
   } catch (error) {
     console.error("Login error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Server error during login",
     });

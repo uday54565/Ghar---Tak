@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript Tasks</title>
+</head>
+<body>
+    <h2>JavaScript Programs</h2>
+
+    <h3>1. Convert Text to Uppercase</h3>
+    <input type="text" id="text" placeholder="Enter text">
+    <button onclick="uppercase()">Convert</button>
+    <p id="result1"></p>
+
+    <hr>
+
+    <h3>2. Calculate Factorial</h3>
+    <input type="number" id="num" placeholder="Enter a number" min="0">
+    <button onclick="calculateFactorial()">Calculate</button>
+    <p id="result2"></p>
+
+    <hr>
+
+    <h3>3. Generate Random Password</h3>
+    <input type="number" id="length" min="1" max="100"
+           placeholder="Password length">
+    <button onclick="generatePassword()">Generate</button>
+    <p id="result3"></p>
+
+    <script>
+        function uppercase() {
+            let text = document.getElementById("text").value;
+            document.getElementById("result1").innerText =
+                text.toUpperCase();
+        }
+
+        function calculateFactorial() {
+            let n = Number(document.getElementById("num").value);
+
+            if (document.getElementById("num").value === "" ||
+                !Number.isInteger(n) || n < 0 || n > 170) {
+                document.getElementById("result2").innerText =
+                    "Enter an integer from 0 to 170";
+                return;
+            }
+
+            let fact = 1;
+            for (let i = 1; i <= n; i++) {
+                fact *= i;
+            }
+
+            document.getElementById("result2").innerText =
+                "Factorial = " + fact;
+        }
+
+        function generatePassword() {
+            let length = Number(
+                document.getElementById("length").value
+            );
+
+            if (!Number.isInteger(length) || length < 1 ||
+                length > 100) {
+                document.getElementById("result3").innerText =
+                    "Enter a length from 1 to 100";
+                return;
+            }
+
+            let chars =
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&*";
+            let password = "";
+
+            for (let i = 0; i < length; i++) {
+                password += chars.charAt(
+                    Math.floor(Math.random() * chars.length)
+                );
+            }
+
+            document.getElementById("result3").innerText =
+                "Password = " + password;
+        }
+    </script>
+</body>
+</html>

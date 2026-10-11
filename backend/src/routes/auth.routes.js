@@ -1,5 +1,7 @@
 const express = require("express");
 
+const {generalLimiter  , loginLimiter , registerLimiter , otpSendLimiter} = require("../middleware/rateLimiter")
+
 const {
   register,
   login,
@@ -7,7 +9,7 @@ const {
 
 const router = express.Router();
 
-router.post("/register", register);
-router.post("/login", login);
+router.post("/register",  registerLimiter,register);
+router.post("/login", loginLimiter ,login);
 
 module.exports = router;

@@ -174,7 +174,7 @@ const createProduct = async (req, res) => {
     const getProducts = async (req, res) => {
   try {
     const products = await Product.find({
-      isAvailable: true,
+      $or: [{ isAvailable: true }, { isAvalable: true }],
     })
       .populate("shop", "shopName address category isOpen")
       .sort({ createdAt: -1 });
