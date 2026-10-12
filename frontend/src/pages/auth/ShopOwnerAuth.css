@@ -714,3 +714,9 @@
     padding: 24px 16px;
   }
 }
+.register-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 12px;
+  line-height: 1.5;
+}
