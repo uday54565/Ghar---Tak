@@ -7,8 +7,10 @@ import OwnerProducts from "./pages/owner/OwnerProducts";
 import OwnerOrders from "./pages/owner/OwnerOrders";
 import Home from "./pages/home/Home";
 import ShopOwnerLogin from "./pages/auth/ShopOwnerLogin";
+import CustomerLogin from "./pages/auth/CustomerLogin";
 import Register from "./pages/auth/Register";
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
+import CustomerDashboard from "./pages/home/CustomerDashboard";
 
 function App() {
   return (
@@ -34,6 +36,9 @@ function App() {
 
       {/* Customer / General Login */}
       <Route path="/login" element={<ShopOwnerLogin />} />
+      <Route path="/customer/login" element={<CustomerLogin />} />
+      <Route path="/customer/register" element={<Register />} />
+      <Route path="/customer/dashboard" element={<CustomerDashboard />} />
 
       {/* Shop Owner Login */}
       <Route path="/owner/login" element={<ShopOwnerLogin />} />

@@ -259,7 +259,19 @@
   text-decoration: none;
 }
 
-.customer-password-heading a:hover {
+.customer-forgot-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--customer-green);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.customer-password-heading a:hover,
+.customer-forgot-link:hover {
   text-decoration: underline;
 }
 
@@ -375,6 +387,30 @@
   font-size: 10px;
   line-height: 1.8;
   text-align: center;
+}
+
+.customer-login-feedback {
+  padding: 18px;
+  border: 1px solid #cfe5dd;
+  border-radius: 12px;
+  background: #f2faf7;
+  color: var(--customer-text);
+}
+
+.customer-login-feedback strong {
+  font-size: 14px;
+}
+
+.customer-login-feedback p {
+  margin: 8px 0 14px;
+  color: var(--customer-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.customer-reset-back {
+  display: block;
+  margin-top: 18px;
 }
 
 .customer-login-page button:focus-visible,
