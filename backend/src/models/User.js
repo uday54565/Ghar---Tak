@@ -46,7 +46,42 @@ const userSchema = new mongoose.Schema(
 lockUntil: {
     type: Date,
     default: null
-}
+},
+// Phone OTP verification
+phoneOtpHash: {
+  type: String,
+  default: null,
+},
+phoneOtpExpiresAt: {
+  type: Date,
+  default: null,
+},
+phoneOtpAttempts: {
+  type: Number,
+  default: 0,
+},
+phoneOtpLastSentAt: {
+  type: Date,
+  default: null,
+},
+
+// Password reset OTP
+resetOtpHash: {
+  type: String,
+  default: null,
+},
+resetOtpExpiresAt: {
+  type: Date,
+  default: null,
+},
+resetOtpAttempts: {
+  type: Number,
+  default: 0,
+},
+resetOtpLastSentAt: {
+  type: Date,
+  default: null,
+},
   },
   {
     timestamps: true,

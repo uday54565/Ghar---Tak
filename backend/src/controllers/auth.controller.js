@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 
 const Shop = require("../models/Shop");
 const User = require("../models/User");
+const { generateOTP, hashOTP } = require("../utils/otp")
 // Generate JWT
 const generateToken = (user) => {
   return jwt.sign(
