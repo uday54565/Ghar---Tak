@@ -714,3 +714,49 @@
     padding: 24px 16px;
   }
 }
+/* OTP Generation Section */
+.otp-section {
+  margin-top: 8px;
+}
+
+.otp-generate-btn {
+  width: 100%;
+  margin-top: 4px;
+  cursor: pointer;
+}
+
+.otp-input-wrapper {
+  margin-top: 14px;
+}
+
+.otp-input-wrapper input {
+  width: 100%;
+  box-sizing: border-box;
+  letter-spacing: 3px;
+}
+
+.otp-verify-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px 20px;
+  border: 1px solid #168b78;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #168b78;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.otp-verify-btn:hover {
+  background: #168b78;
+  color: #ffffff;
+}
+
+.otp-message {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+}
