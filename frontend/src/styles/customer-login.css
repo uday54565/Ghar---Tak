@@ -496,3 +496,32 @@
     transition-duration: 0.01ms !important;
   }
 }
+/* Forgot Password Page */
+
+.forgot-password-message {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid #b7e4d5;
+  border-radius: 10px;
+  background: #effaf5;
+  color: #13795b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.forgot-password-back {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.forgot-password-back a {
+  color: #168b78;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgot-password-back a:hover {
+  color: #106b5c;
+  text-decoration: underline;
+}
