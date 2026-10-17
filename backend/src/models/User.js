@@ -47,41 +47,35 @@ lockUntil: {
     type: Date,
     default: null
 },
-// Phone OTP verification
-phoneOtpHash: {
+emailOtpHash: { type: String, default: null },
+emailOtpExpiresAt: { type: Date, default: null },
+emailOtpAttempts: { type: Number, default: 0 },
+emailOtpLastSentAt: { type: Date, default: null },
+
+resetOtpHash: { type: String, default: null },
+resetOtpExpiresAt: { type: Date, default: null },
+resetOtpAttempts: { type: Number, default: 0 },
+resetOtpLastSentAt: { type: Date, default: null },
+
+resetOtpVerified: { type: Boolean, default: false },
+resetOtpVerifiedUntil: { type: Date, default: null },
+
+pendingShopName: { type: String, default: null },
+pendingShopAddress: { type: String, default: null },
+
+resetTokenHash: {
   type: String,
-  default: null,
+  default: null
 },
-phoneOtpExpiresAt: {
+resetTokenExpiresAt: {
   type: Date,
-  default: null,
+  default: null
 },
-phoneOtpAttempts: {
-  type: Number,
-  default: 0,
-},
-phoneOtpLastSentAt: {
+resetTokenLastSentAt: {
   type: Date,
-  default: null,
+  default: null
 },
 
-// Password reset OTP
-resetOtpHash: {
-  type: String,
-  default: null,
-},
-resetOtpExpiresAt: {
-  type: Date,
-  default: null,
-},
-resetOtpAttempts: {
-  type: Number,
-  default: 0,
-},
-resetOtpLastSentAt: {
-  type: Date,
-  default: null,
-},
   },
   {
     timestamps: true,
