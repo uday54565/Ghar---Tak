@@ -80,6 +80,12 @@ function OwnerProducts() {
     });
   }, [products, search, categoryFilter]);
 
+  const totalProducts = products.length;
+
+const availableProducts = products.filter((product) => product.available).length;
+
+const unavailableProducts = totalProducts - availableProducts;
+
   const openAddModal = () => {
     setEditingProduct(null);
     setForm(emptyForm);
@@ -197,6 +203,43 @@ function OwnerProducts() {
 
         <section className="owner-content">
           <div className="panel-header">
+          <div className="product-summary-grid">
+  <article className="product-summary-card">
+    <div className="product-summary-icon total-icon">
+      ▤
+    </div>
+
+    <div>
+      <p>Total Products</p>
+      <h3>{totalProducts}</h3>
+      <span>Products in your catalogue</span>
+    </div>
+  </article>
+
+  <article className="product-summary-card">
+    <div className="product-summary-icon available-icon">
+      ✓
+    </div>
+
+    <div>
+      <p>Available Products</p>
+      <h3>{availableProducts}</h3>
+      <span>Ready for customers</span>
+    </div>
+  </article>
+
+  <article className="product-summary-card">
+    <div className="product-summary-icon unavailable-icon">
+      ◷
+    </div>
+
+    <div>
+      <p>Unavailable Products</p>
+      <h3>{unavailableProducts}</h3>
+      <span>Currently unavailable</span>
+    </div>
+  </article>
+</div>
             <div>
               <p className="panel-label">PRODUCT MANAGEMENT</p>
 

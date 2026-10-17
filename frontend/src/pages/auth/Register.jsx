@@ -1,18 +1,42 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./ShopOwnerAuth.css";
 
 function Register() {
+  const navigate = useNavigate();
   const [role, setRole] = useState("user");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    console.log("Register:", {
-      role,
-    });
+    if (password !== confirmPassword) {
+      setError("Your passwords do not match. Please check and try again.");
+      return;
+    }
+
+    if (!/^\d{10}$/.test(phone.trim())) {
+      setError("Enter a valid 10-digit phone number.");
+      return;
+    }
+
+    if (role === "user") {
+      localStorage.setItem(
+        "ghartak-customer-profile",
+        JSON.stringify({ name: name.trim(), email: email.trim(), phone: phone.trim() })
+      );
+      navigate("/customer/dashboard");
+      return;
+    }
+
+    navigate("/owner/dashboard");
   };
 
   return (
@@ -112,6 +136,11 @@ function Register() {
                       ? "Enter your name"
                       : "Enter owner name"
                   }
+                  value={name}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    setError("");
+                  }}
                   required
                 />
               </div>
@@ -142,6 +171,11 @@ function Register() {
                   id="email"
                   type="email"
                   placeholder="Enter your email"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setError("");
+                  }}
                   required
                 />
               </div>
@@ -158,7 +192,12 @@ function Register() {
                   id="phone"
                   type="tel"
                   placeholder="Enter phone number"
-                  maxLength="10"
+                  maxLength={10}
+                  value={phone}
+                  onChange={(event) => {
+                    setPhone(event.target.value.replace(/\D/g, "").slice(0, 10));
+                    setError("");
+                  }}
                   required
                 />
               </div>
@@ -189,6 +228,11 @@ function Register() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Create a password"
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    setError("");
+                  }}
                   required
                 />
 
@@ -216,6 +260,11 @@ function Register() {
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(event) => {
+                    setConfirmPassword(event.target.value);
+                    setError("");
+                  }}
                   required
                 />
 
@@ -236,6 +285,8 @@ function Register() {
               </div>
             </div>
 
+            {error && <p className="register-error" role="alert">{error}</p>}
+
             <button type="submit" className="auth-submit">
               Create {role === "user" ? "Account" : "Shop Account"}
               <span>→</span>
@@ -244,7 +295,9 @@ function Register() {
 
           <div className="auth-switch">
             Already have an account?
-            <Link to="/login">Login</Link>
+            <Link to={role === "user" ? "/customer/login" : "/owner/login"}>
+              Login
+            </Link>
           </div>
 
           <Link to="/" className="back-home">
