@@ -9,18 +9,25 @@ export default function CustomerLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = (event) => {
-  event.preventDefault();
+    event.preventDefault();
 
-  if (!email.trim() || !password) {
-    setError("Please enter your email and password.");
-    return;
-  }
+    if (!email.trim() || (!showResetForm && !password)) {
+      setError("Please complete all required fields.");
+      return;
+    }
 
-  // Temporary UI testing only — does not authenticate credentials.
-  navigate("/customer/dashboard");
-};
+    if (showResetForm) {
+      setResetSent(true);
+      setError("");
+      return;
+    }
+
+    navigate("/customer/dashboard");
+  };
 
   return (
     <main className="customer-login-page">
@@ -81,13 +88,34 @@ export default function CustomerLogin() {
             </div>
 
             <div className="customer-form-heading">
-              <span>WELCOME BACK</span>
-              <h2>Login to your account</h2>
+              <span>{showResetForm ? "ACCOUNT SUPPORT" : "WELCOME BACK"}</span>
+              <h2>{showResetForm ? "Reset your password" : "Login to your account"}</h2>
               <p>
-                Enter your details to continue shopping locally.
+                {showResetForm
+                  ? "Enter your email and we’ll show a demo confirmation."
+                  : "Enter your details to continue shopping locally."}
               </p>
             </div>
 
+            {resetSent ? (
+              <div className="customer-login-feedback" role="status">
+                <strong>Reset request received</strong>
+                <p>
+                  In a live version, password reset instructions would be sent
+                  to {email}.
+                </p>
+                <button
+                  type="button"
+                  className="customer-forgot-link"
+                  onClick={() => {
+                    setShowResetForm(false);
+                    setResetSent(false);
+                  }}
+                >
+                  Back to login
+                </button>
+              </div>
+            ) : (
             <form
               className="customer-login-form"
               onSubmit={handleSubmit}
@@ -111,44 +139,50 @@ export default function CustomerLogin() {
                 />
               </div>
 
-              <div className="customer-input-group">
-                <div className="customer-password-heading">
-                  <label htmlFor="customer-password">
-                    Password
-                  </label>
+              {!showResetForm && (
+                <div className="customer-input-group">
+                  <div className="customer-password-heading">
+                    <label htmlFor="customer-password">Password</label>
+                    <button
+                      type="button"
+                      className="customer-forgot-link"
+                      onClick={() => {
+                        setShowResetForm(true);
+                        setError("");
+                      }}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
 
-                  <Link to="/forgot-password">
-                    Forgot password?
-                  </Link>
+                  <div className="customer-password-wrapper">
+                    <input
+                      id="customer-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(event) => {
+                        setPassword(event.target.value);
+                        setError("");
+                      }}
+                      autoComplete="current-password"
+                      required
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPassword((current) => !current)
+                      }
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
                 </div>
-
-                <div className="customer-password-wrapper">
-                  <input
-                    id="customer-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(event) => {
-                      setPassword(event.target.value);
-                      setError("");
-                    }}
-                    autoComplete="current-password"
-                    required
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowPassword((current) => !current)
-                    }
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
-              </div>
+              )}
 
               {error && (
                 <p className="customer-login-error" role="alert">
@@ -160,24 +194,41 @@ export default function CustomerLogin() {
                 type="submit"
                 className="customer-login-button"
               >
-                Login to your account <span>→</span>
+                {showResetForm ? "Send reset instructions" : "Login to your account"} <span>→</span>
               </button>
             </form>
+            )}
 
+            {showResetForm && !resetSent && (
+              <button
+                type="button"
+                className="customer-forgot-link customer-reset-back"
+                onClick={() => {
+                  setShowResetForm(false);
+                  setError("");
+                }}
+              >
+                ← Back to login
+              </button>
+            )}
+
+            {!showResetForm && (
             <div className="customer-login-separator">
               <span>NEW TO GHAR TAK?</span>
             </div>
+            )}
 
-            <Link
-              to="/customer/register"
-              className="customer-signup-button"
-            >
-              Create a customer account
-            </Link>
+            {!showResetForm && (
+              <Link
+                to="/customer/register"
+                className="customer-signup-button"
+              >
+                Create a customer account
+              </Link>
+            )}
 
             <p className="customer-login-terms">
-              By continuing, you agree to our applicable terms
-              and privacy policy.
+              Demo customer sign-in only. No credentials are sent or verified.
             </p>
           </div>
         </section>

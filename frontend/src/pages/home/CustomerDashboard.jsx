@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import "../../styles/customer-dashboard.css";
 
 const categories = [
@@ -123,27 +122,153 @@ const shops = [
   },
 ];
 
-export default function CustomerDashboard() {
-  const navigate = useNavigate();
+const demoOrders = [
+  {
+    id: "GT-24018",
+    placedAt: "Today, 11:20 AM",
+    items: [
+      { name: "Fresh Tomatoes", quantity: 2 },
+      { name: "Fresh Milk", quantity: 1 },
+    ],
+    total: 120,
+    status: "Out for delivery",
+    eta: "Arriving in 8–12 min",
+    payment: "Cash on delivery",
+  },
+];
 
+const demoProfile = {
+  name: "Rahul Kumar",
+  email: "rahul@example.com",
+  phone: "",
+};
+
+const demoAddresses = [
+  {
+    id: "demo-home",
+    label: "Home",
+    details: "12 Green Park Road, Sector 4, New Delhi, 110016",
+  },
+];
+
+function readStoredValue(key, fallback, isValid) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || "null");
+    return isValid(value) ? value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function createDemoOrder({ cartProducts, cart, total, paymentMethod, address }) {
+  return {
+    id: `GT-${String(Date.now()).slice(-6)}`,
+    placedAt: new Date().toLocaleString("en-IN", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }),
+    items: cartProducts.map((product) => ({
+      name: product.name,
+      quantity: cart[product.id],
+    })),
+    total,
+    status: "Confirmed",
+    eta: "Preparing your order",
+    payment: paymentMethod,
+    address,
+  };
+}
+
+export default function CustomerDashboard() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [cart, setCart] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("ghartak-customer-cart") || "{}");
-    } catch {
-      return {};
-    }
-  });
-  const [wishlist, setWishlist] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("ghartak-customer-wishlist") || "[]");
-    } catch {
-      return [];
-    }
-  });
+  const [cart, setCart] = useState(() =>
+    readStoredValue(
+      "ghartak-customer-cart",
+      {},
+      (value) =>
+        value !== null &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        Object.values(value).every(
+          (quantity) => Number.isInteger(quantity) && quantity > 0
+        )
+    )
+  );
+  const [wishlist, setWishlist] = useState(() =>
+    readStoredValue(
+      "ghartak-customer-wishlist",
+      [],
+      (value) =>
+        Array.isArray(value) &&
+        value.every((id) => products.some((product) => product.id === id))
+    )
+  );
+  const [orders, setOrders] = useState(() =>
+    readStoredValue(
+      "ghartak-customer-orders",
+      demoOrders,
+      (value) =>
+        Array.isArray(value) &&
+        value.every(
+          (order) =>
+            typeof order.id === "string" &&
+            typeof order.status === "string" &&
+            typeof order.total === "number" &&
+            Array.isArray(order.items) &&
+            order.items.every(
+              (item) =>
+                typeof item.name === "string" &&
+                Number.isInteger(item.quantity) &&
+                item.quantity > 0
+            )
+        )
+    )
+  );
+  const [profile, setProfile] = useState(() =>
+    readStoredValue(
+      "ghartak-customer-profile",
+      demoProfile,
+      (value) =>
+        value !== null &&
+        typeof value === "object" &&
+        typeof value.name === "string" &&
+        typeof value.email === "string" &&
+        typeof value.phone === "string"
+    )
+  );
+  const [addresses, setAddresses] = useState(() =>
+    readStoredValue(
+      "ghartak-customer-addresses",
+      demoAddresses,
+      (value) =>
+        Array.isArray(value) &&
+        value.every(
+          (address) =>
+            typeof address.id === "string" &&
+            typeof address.label === "string" &&
+            typeof address.details === "string"
+        )
+    )
+  );
+  const [selectedAddressId, setSelectedAddressId] = useState(() =>
+    readStoredValue(
+      "ghartak-customer-selected-address",
+      addresses[0]?.id || "",
+      (value) =>
+        typeof value === "string" &&
+        (value === "" || addresses.some((address) => address.id === value))
+    )
+  );
   const [activeTab, setActiveTab] = useState("Home");
   const [showCart, setShowCart] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressLabel, setAddressLabel] = useState("");
+  const [addressDetails, setAddressDetails] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Cash on delivery");
+  const [profileForm, setProfileForm] = useState(profile);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -154,15 +279,42 @@ export default function CustomerDashboard() {
     localStorage.setItem("ghartak-customer-wishlist", JSON.stringify(wishlist));
   }, [wishlist]);
 
+  useEffect(() => {
+    localStorage.setItem("ghartak-customer-orders", JSON.stringify(orders));
+  }, [orders]);
+
+  useEffect(() => {
+    localStorage.setItem("ghartak-customer-profile", JSON.stringify(profile));
+  }, [profile]);
+
+  useEffect(() => {
+    localStorage.setItem("ghartak-customer-addresses", JSON.stringify(addresses));
+  }, [addresses]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "ghartak-customer-selected-address",
+      JSON.stringify(selectedAddressId)
+    );
+  }, [selectedAddressId]);
+
   const wishlistProducts = products.filter((product) => wishlist.includes(product.id));
+  const selectedAddress = addresses.find(
+    (address) => address.id === selectedAddressId
+  ) || addresses[0];
 
   function toggleWishlist(productId) {
+    const isSaved = wishlist.includes(productId);
     setWishlist((current) =>
-      current.includes(productId)
+      isSaved
         ? current.filter((id) => id !== productId)
         : [...current, productId]
     );
-    setNotice("");
+    setNotice(
+      isSaved
+        ? "Product removed from your wishlist."
+        : "Product saved to your wishlist."
+    );
   }
 
   const filteredProducts = useMemo(() => {
@@ -197,6 +349,8 @@ export default function CustomerDashboard() {
   const cartProducts = products.filter(
     (product) => cart[product.id] > 0
   );
+  const deliveryFee = cartTotal >= 499 ? 0 : 25;
+  const orderTotal = cartTotal + deliveryFee;
 
   function updateCart(productId, change) {
     setCart((currentCart) => {
@@ -212,32 +366,110 @@ export default function CustomerDashboard() {
       return nextCart;
     });
 
-    setNotice("");
+    setNotice(
+      change > 0 ? "Product added to your cart." : "Cart quantity updated."
+    );
   }
 
   function handleNavigation(tab) {
     setActiveTab(tab);
     setNotice("");
-
+    setShowCheckout(false);
+    setShowAddressForm(false);
     if (tab === "Cart") {
       setShowCart(true);
       return;
     }
 
     setShowCart(false);
-
-    if (tab === "Orders") {
-      setNotice("Your order history will appear here once orders are connected.");
-    } else if (tab === "Profile") {
-      setNotice("Customer profile and saved addresses will be available here.");
-    }
   }
 
   function handleCheckout() {
+    if (cartProducts.length === 0) {
+      setNotice("Add at least one item to your cart before checkout.");
+      return;
+    }
+
     setShowCart(false);
-    setNotice(
-      "Checkout is not connected yet. We'll implement delivery addresses, order placement, and payment next."
+    setShowCheckout(true);
+    setNotice("");
+  }
+
+  function saveAddress(event) {
+    event.preventDefault();
+    const details = addressDetails.trim();
+    const label = addressLabel.trim();
+
+    if (!details || !label) {
+      setNotice("Enter an address label and delivery address.");
+      return;
+    }
+
+    const address = {
+      id: `address-${Date.now()}`,
+      label,
+      details,
+    };
+    setAddresses((current) => [...current, address]);
+    setSelectedAddressId(address.id);
+    setAddressLabel("");
+    setAddressDetails("");
+    setShowAddressForm(false);
+    setNotice("Your delivery address has been saved.");
+  }
+
+  function saveProfile(event) {
+    event.preventDefault();
+    const nextProfile = {
+      name: profileForm.name.trim(),
+      email: profileForm.email.trim(),
+      phone: profileForm.phone.trim(),
+    };
+
+    if (!nextProfile.name || !nextProfile.email) {
+      setNotice("Please enter your name and email address.");
+      return;
+    }
+
+    setProfile(nextProfile);
+    setProfileForm(nextProfile);
+    setNotice("Your profile details have been saved.");
+  }
+
+  function placeOrder(event) {
+    event.preventDefault();
+
+    if (!selectedAddress) {
+      setNotice("Choose or add a delivery address before placing your order.");
+      setShowLocationPicker(true);
+      return;
+    }
+
+    const order = createDemoOrder({
+      cartProducts,
+      cart,
+      total: orderTotal,
+      paymentMethod,
+      address: selectedAddress.details,
+    });
+
+    setOrders((current) => [order, ...current]);
+    setCart({});
+    setShowCheckout(false);
+    setShowCart(false);
+    setActiveTab("Orders");
+    setNotice(`Order ${order.id} placed successfully. This is a frontend demo order.`);
+  }
+
+  function deleteAddress(addressId) {
+    const remainingAddresses = addresses.filter(
+      (address) => address.id !== addressId
     );
+    setAddresses(remainingAddresses);
+    if (selectedAddressId === addressId) {
+      setSelectedAddressId(remainingAddresses[0]?.id || "");
+    }
+    setNotice("Delivery address removed.");
   }
 
   return (
@@ -249,6 +481,7 @@ export default function CustomerDashboard() {
             onClick={() => {
               setActiveTab("Home");
               setShowCart(false);
+              setShowCheckout(false);
               setNotice("");
             }}
             aria-label="Go to customer home"
@@ -262,16 +495,12 @@ export default function CustomerDashboard() {
 
           <button
             className="customer-location"
-            onClick={() =>
-              setNotice(
-                "Address selection will be available when delivery addresses are implemented."
-              )
-            }
+            onClick={() => setShowLocationPicker(true)}
           >
             <span className="customer-location-pin">⌖</span>
             <span>
               <small>DELIVERING TO</small>
-              <strong>Select your location⌄</strong>
+              <strong>{selectedAddress?.label || "Add your location"}⌄</strong>
             </span>
           </button>
 
@@ -280,7 +509,7 @@ export default function CustomerDashboard() {
             onClick={() => handleNavigation("Profile")}
           >
             <span>👤</span>
-            <strong>My Account</strong>
+            <strong>{profile.name || "My Account"}</strong>
           </button>
         </div>
       </header>
@@ -322,6 +551,7 @@ export default function CustomerDashboard() {
                 setSearch(event.target.value);
                 setActiveTab("Home");
                 setShowCart(false);
+                setShowCheckout(false);
               }}
               aria-label="Search products and shops"
             />
@@ -351,7 +581,148 @@ export default function CustomerDashboard() {
           </div>
         )}
 
-        {showCart ? (
+        {showCheckout ? (
+          <section className="customer-section customer-checkout-section">
+            <div className="customer-section-heading">
+              <div>
+                <span className="customer-eyebrow">ALMOST THERE</span>
+                <h2>Complete your order</h2>
+              </div>
+              <button
+                className="customer-text-button"
+                onClick={() => {
+                  setShowCheckout(false);
+                  setShowCart(true);
+                }}
+              >
+                ← Back to cart
+              </button>
+            </div>
+
+            <div className="customer-checkout-layout">
+              <div className="customer-checkout-details">
+                <section className="customer-detail-card">
+                  <div className="customer-detail-heading">
+                    <div>
+                      <span>01</span>
+                      <h3>Delivery address</h3>
+                    </div>
+                    <button
+                      className="customer-text-button"
+                      onClick={() => setShowLocationPicker(true)}
+                    >
+                      Change
+                    </button>
+                  </div>
+                  {selectedAddress ? (
+                    <div className="customer-selected-address">
+                      <strong>{selectedAddress.label}</strong>
+                      <p>{selectedAddress.details}</p>
+                    </div>
+                  ) : (
+                    <button
+                      className="customer-add-address-button"
+                      onClick={() => setShowLocationPicker(true)}
+                    >
+                      + Add a delivery address
+                    </button>
+                  )}
+                </section>
+
+                <section className="customer-detail-card">
+                  <div className="customer-detail-heading">
+                    <div>
+                      <span>02</span>
+                      <h3>Payment method</h3>
+                    </div>
+                  </div>
+                  <div className="customer-payment-options">
+                    {["Cash on delivery", "UPI", "Credit or debit card"].map(
+                      (method) => (
+                        <label
+                          className="customer-payment-option"
+                          key={method}
+                        >
+                          <input
+                            type="radio"
+                            name="payment-method"
+                            value={method}
+                            checked={paymentMethod === method}
+                            onChange={() => setPaymentMethod(method)}
+                          />
+                          <span>{method}</span>
+                          {method === "Cash on delivery" && (
+                            <small>Pay when your order arrives</small>
+                          )}
+                          {method !== "Cash on delivery" && (
+                            <small>Demo option · payment is not processed</small>
+                          )}
+                        </label>
+                      )
+                    )}
+                  </div>
+                </section>
+
+                <section className="customer-detail-card">
+                  <div className="customer-detail-heading">
+                    <div>
+                      <span>03</span>
+                      <h3>Items in your order</h3>
+                    </div>
+                    <span className="customer-section-caption">
+                      {cartCount} items
+                    </span>
+                  </div>
+                  <div className="customer-checkout-items">
+                    {cartProducts.map((product) => (
+                      <div key={product.id}>
+                        <span>{product.emoji}</span>
+                        <p>
+                          <strong>{product.name}</strong>
+                          <small>
+                            {cart[product.id]} × ₹{product.price}
+                          </small>
+                        </p>
+                        <strong>₹{product.price * cart[product.id]}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              <aside className="customer-order-summary">
+                <h3>Price details</h3>
+                <div>
+                  <span>Item total</span>
+                  <strong>₹{cartTotal}</strong>
+                </div>
+                <div>
+                  <span>Delivery fee</span>
+                  <strong>{deliveryFee ? `₹${deliveryFee}` : "FREE"}</strong>
+                </div>
+                <div className="customer-summary-total">
+                  <span>To pay</span>
+                  <strong>₹{orderTotal}</strong>
+                </div>
+                {cartTotal < 499 && (
+                  <small>Add items worth ₹{499 - cartTotal} more for free delivery.</small>
+                )}
+                <form onSubmit={placeOrder}>
+                  <button
+                    type="submit"
+                    className="customer-primary-button customer-full-button"
+                    disabled={cartProducts.length === 0}
+                  >
+                    Place demo order · ₹{orderTotal}
+                  </button>
+                </form>
+                <p className="customer-demo-note">
+                  This is a frontend demo. No payment will be taken.
+                </p>
+              </aside>
+            </div>
+          </section>
+        ) : showCart ? (
           <section className="customer-section customer-cart-section">
             <div className="customer-section-heading">
               <div>
@@ -421,11 +792,11 @@ export default function CustomerDashboard() {
                   </div>
                   <div>
                     <span>Delivery fee</span>
-                    <strong>Calculated at checkout</strong>
+                    <strong>{deliveryFee ? `₹${deliveryFee}` : "FREE"}</strong>
                   </div>
                   <div className="customer-summary-total">
-                    <span>Item total</span>
-                    <strong>₹{cartTotal}</strong>
+                    <span>Total</span>
+                    <strong>₹{orderTotal}</strong>
                   </div>
                   <button
                     className="customer-primary-button customer-full-button"
@@ -433,7 +804,11 @@ export default function CustomerDashboard() {
                   >
                     Continue to checkout →
                   </button>
-                  <small>Delivery charges are not included yet.</small>
+                  <small>
+                    {deliveryFee
+                      ? "Free delivery on orders of ₹499 or more."
+                      : "You unlocked free delivery!"}
+                  </small>
                 </aside>
               </div>
             )}
@@ -485,25 +860,279 @@ export default function CustomerDashboard() {
               </div>
             )}
           </section>
-        ) : activeTab === "Orders" || activeTab === "Profile" ? (
-          <section className="customer-empty-state">
-            <span>{activeTab === "Orders" ? "📦" : "👤"}</span>
-            <h2>
-              {activeTab === "Orders"
-                ? "Your orders, all in one place"
-                : "Your customer profile"}
-            </h2>
-            <p>
-              {activeTab === "Orders"
-                ? "Once ordering is connected, you can follow current orders and revisit previous purchases here."
-                : "Your account details and delivery addresses will be available here."}
-            </p>
-            <button
-              className="customer-primary-button"
-              onClick={() => handleNavigation("Home")}
-            >
-              Back to shopping
-            </button>
+        ) : activeTab === "Orders" ? (
+          <section className="customer-section customer-orders-section">
+            <div className="customer-section-heading">
+              <div>
+                <span className="customer-eyebrow">YOUR GHAR TAK ACTIVITY</span>
+                <h2>My orders</h2>
+              </div>
+              <span className="customer-section-caption">
+                {orders.length} {orders.length === 1 ? "order" : "orders"}
+              </span>
+            </div>
+            {orders.length === 0 ? (
+              <div className="customer-empty-state">
+                <span>📦</span>
+                <h3>Your next favourite order starts here</h3>
+                <p>When you place an order, you can follow its progress here.</p>
+                <button
+                  className="customer-primary-button"
+                  onClick={() => handleNavigation("Home")}
+                >
+                  Explore local shops
+                </button>
+              </div>
+            ) : (
+              <div className="customer-order-list">
+                {orders.map((order) => {
+                  const progressSteps = [
+                    "Confirmed",
+                    "Preparing",
+                    "On the way",
+                    "Delivered",
+                  ];
+                  const normalizedStatus =
+                    order.status === "Out for delivery"
+                      ? "On the way"
+                      : order.status;
+                  const activeStep = Math.max(
+                    0,
+                    progressSteps.indexOf(normalizedStatus)
+                  );
+
+                  return (
+                    <article className="customer-order-card" key={order.id}>
+                      <div className="customer-order-card-header">
+                        <div>
+                          <span className="customer-eyebrow">
+                            ORDER {order.id}
+                          </span>
+                          <p>Placed {order.placedAt}</p>
+                        </div>
+                        <span className="customer-order-status">
+                          <i />
+                          {order.status}
+                        </span>
+                      </div>
+                      <div className="customer-order-card-body">
+                        <div>
+                          <strong>
+                            {order.items
+                              .map((item) => `${item.name} × ${item.quantity}`)
+                              .join(", ")}
+                          </strong>
+                          <span>{order.payment || "Payment at checkout"}</span>
+                          {order.address && <span>{order.address}</span>}
+                        </div>
+                        <strong className="customer-order-total">
+                          ₹{order.total}
+                        </strong>
+                      </div>
+                      <div className="customer-order-progress">
+                        {progressSteps.map((step, index) => (
+                          <div
+                            className={
+                              index <= activeStep ? "complete" : ""
+                            }
+                            key={step}
+                          >
+                            <span>{index < activeStep ? "✓" : index + 1}</span>
+                            <small>{step}</small>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="customer-order-card-footer">
+                        <span>🚴 {order.eta || "Order completed"}</span>
+                        <button
+                          className="customer-text-button"
+                          onClick={() => {
+                            const repeatItems = Object.fromEntries(
+                              order.items
+                                .map((item) => {
+                                  const product = products.find(
+                                    (entry) => entry.name === item.name
+                                  );
+                                  return product
+                                    ? [product.id, item.quantity]
+                                    : null;
+                                })
+                                .filter(Boolean)
+                            );
+                            setCart((current) =>
+                              Object.entries(repeatItems).reduce(
+                                (next, [productId, quantity]) => ({
+                                  ...next,
+                                  [productId]:
+                                    (next[productId] || 0) + quantity,
+                                }),
+                                { ...current }
+                              )
+                            );
+                            setShowCheckout(false);
+                            setShowCart(true);
+                            setActiveTab("Cart");
+                            setNotice(
+                              Object.keys(repeatItems).length
+                                ? "Items from this order were added to your cart."
+                                : "Those items are no longer available in this demo catalog."
+                            );
+                          }}
+                        >
+                          Order again →
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        ) : activeTab === "Profile" ? (
+          <section className="customer-section customer-profile-section">
+            <div className="customer-section-heading">
+              <div>
+                <span className="customer-eyebrow">YOUR ACCOUNT</span>
+                <h2>Profile & addresses</h2>
+              </div>
+            </div>
+            <div className="customer-profile-grid">
+              <form className="customer-detail-card customer-profile-form" onSubmit={saveProfile}>
+                <div className="customer-detail-heading">
+                  <div>
+                    <span>01</span>
+                    <h3>Personal details</h3>
+                  </div>
+                </div>
+                <label>
+                  Full name
+                  <input
+                    value={profileForm.name}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  Email address
+                  <input
+                    type="email"
+                    value={profileForm.email}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  Phone number
+                  <input
+                    type="tel"
+                    value={profileForm.phone}
+                    onChange={(event) =>
+                      setProfileForm((current) => ({
+                        ...current,
+                        phone: event.target.value,
+                      }))
+                    }
+                    placeholder="Add a contact number"
+                  />
+                </label>
+                <button className="customer-primary-button" type="submit">
+                  Save profile
+                </button>
+              </form>
+
+              <section className="customer-detail-card customer-addresses-card">
+                <div className="customer-detail-heading">
+                  <div>
+                    <span>02</span>
+                    <h3>Saved addresses</h3>
+                  </div>
+                  <button
+                    className="customer-text-button"
+                    onClick={() => setShowAddressForm((current) => !current)}
+                  >
+                    {showAddressForm ? "Cancel" : "+ Add address"}
+                  </button>
+                </div>
+                {showAddressForm && (
+                  <form className="customer-address-form" onSubmit={saveAddress}>
+                    <label>
+                      Address label
+                      <input
+                        value={addressLabel}
+                        onChange={(event) => setAddressLabel(event.target.value)}
+                        placeholder="Home, Work..."
+                        required
+                      />
+                    </label>
+                    <label>
+                      Full delivery address
+                      <textarea
+                        value={addressDetails}
+                        onChange={(event) => setAddressDetails(event.target.value)}
+                        placeholder="House / flat, street, area, city and PIN code"
+                        rows="3"
+                        required
+                      />
+                    </label>
+                    <button className="customer-primary-button" type="submit">
+                      Save address
+                    </button>
+                  </form>
+                )}
+                {addresses.length === 0 ? (
+                  <div className="customer-address-empty">
+                    <p>No saved addresses yet. Add one for a quicker checkout.</p>
+                  </div>
+                ) : (
+                  <div className="customer-address-list">
+                    {addresses.map((address) => (
+                      <article key={address.id}>
+                        <span className="customer-address-pin">⌖</span>
+                        <div>
+                          <strong>
+                            {address.label}
+                            {selectedAddressId === address.id && (
+                              <small>DEFAULT</small>
+                            )}
+                          </strong>
+                          <p>{address.details}</p>
+                        </div>
+                        <div className="customer-address-actions">
+                          {selectedAddressId !== address.id && (
+                            <button
+                              className="customer-text-button"
+                              onClick={() => {
+                                setSelectedAddressId(address.id);
+                                setNotice(`${address.label} selected for delivery.`);
+                              }}
+                            >
+                              Set default
+                            </button>
+                          )}
+                          <button
+                            className="customer-address-remove"
+                            onClick={() => deleteAddress(address.id)}
+                            aria-label={`Remove ${address.label} address`}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
           </section>
         ) : (
           <>
@@ -677,6 +1306,7 @@ export default function CustomerDashboard() {
                           setActiveCategory("All");
                           setActiveTab("Home");
                           setShowCart(false);
+                          setShowCheckout(false);
                           document
                             .getElementById("customer-products")
                             ?.scrollIntoView({ behavior: "smooth" });
@@ -758,6 +1388,95 @@ export default function CustomerDashboard() {
         <strong>GHAR TAK</strong>
         <p>Your neighbourhood, delivered.</p>
       </footer>
+
+      {showLocationPicker && (
+        <div className="customer-modal-backdrop">
+          <section
+            className="customer-location-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="customer-location-title"
+          >
+            <div className="customer-detail-heading">
+              <div>
+                <span>⌖</span>
+                <h2 id="customer-location-title">Choose delivery address</h2>
+              </div>
+              <button
+                className="customer-modal-close"
+                onClick={() => setShowLocationPicker(false)}
+                aria-label="Close address selection"
+              >
+                ×
+              </button>
+            </div>
+            {addresses.length === 0 && !showAddressForm && (
+              <div className="customer-address-empty">
+                <p>Add a delivery address to continue with checkout.</p>
+              </div>
+            )}
+            <div className="customer-location-options">
+              {addresses.map((address) => (
+                <button
+                  className={`customer-location-option ${
+                    selectedAddressId === address.id ? "selected" : ""
+                  }`}
+                  key={address.id}
+                  onClick={() => {
+                    setSelectedAddressId(address.id);
+                    setNotice(`${address.label} selected for delivery.`);
+                  }}
+                >
+                  <span>{selectedAddressId === address.id ? "✓" : "⌖"}</span>
+                  <strong>{address.label}</strong>
+                  <small>{address.details}</small>
+                </button>
+              ))}
+            </div>
+            {showAddressForm && (
+              <form className="customer-address-form" onSubmit={saveAddress}>
+                <label>
+                  Address label
+                  <input
+                    value={addressLabel}
+                    onChange={(event) => setAddressLabel(event.target.value)}
+                    placeholder="Home, Work..."
+                    required
+                  />
+                </label>
+                <label>
+                  Full delivery address
+                  <textarea
+                    value={addressDetails}
+                    onChange={(event) => setAddressDetails(event.target.value)}
+                    placeholder="House / flat, street, area, city and PIN code"
+                    rows="3"
+                    required
+                  />
+                </label>
+                <button className="customer-primary-button" type="submit">
+                  Save address
+                </button>
+              </form>
+            )}
+            <div className="customer-location-modal-actions">
+              <button
+                className="customer-text-button"
+                onClick={() => setShowAddressForm((current) => !current)}
+              >
+                {showAddressForm ? "Cancel adding address" : "+ Add a new address"}
+              </button>
+              <button
+                className="customer-primary-button"
+                onClick={() => setShowLocationPicker(false)}
+                disabled={!selectedAddress}
+              >
+                Use this address
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

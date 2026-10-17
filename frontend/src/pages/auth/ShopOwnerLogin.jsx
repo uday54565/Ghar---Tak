@@ -15,7 +15,7 @@ function ShopOwnerLogin() {
     return;
   }
 
-  navigate("/");
+  navigate("/customer/dashboard");
 };
 
   return (

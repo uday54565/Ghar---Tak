@@ -759,4 +759,9 @@
   font-size: 13px;
   line-height: 1.5;
   color: #64748b;
+.register-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 12px;
+  line-height: 1.5;
 }
