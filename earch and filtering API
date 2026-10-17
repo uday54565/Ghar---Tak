@@ -1,0 +1,567 @@
+[1mdiff --git a/backend/src/controllers/auth.controller.js b/backend/src/controllers/auth.controller.js[m
+[1mindex 710b567..df4a610 100644[m
+[1m--- a/backend/src/controllers/auth.controller.js[m
+[1m+++ b/backend/src/controllers/auth.controller.js[m
+[36m@@ -488,7 +488,7 @@[m [mconst resetPassword = async ( req , res) => {[m
+ [m
+   }[m
+ [m
+[31m-  if( newPassword < 8 || newPassword > 15){[m
+[32m+[m[32m  if( newPassword.length< 8 || newPassword.length > 15){[m
+     return res.status(400).json({[m
+ [m
+       success : false,[m
+[36m@@ -529,6 +529,14 @@[m [mconst resetPassword = async ( req , res) => {[m
+ [m
+     await user.save();[m
+ [m
+[32m+[m[32m    const savedUser = await User.findById(user._id).select("+password");[m
+[32m+[m
+[32m+[m[32mconsole.log("Password saved:", Boolean(savedUser?.password));[m
+[32m+[m[32mconsole.log([m
+[32m+[m[32m  "New password matches:",[m
+[32m+[m[32m  await bcrypt.compare(newPassword, savedUser.password)[m
+[32m+[m[32m);[m
+[32m+[m
+     return res.status(200).json({[m
+       success: true,[m
+       message: "Password reset successful. Please log in.",[m
+[1mdiff --git a/backend/src/controllers/order.controller.js b/backend/src/controllers/order.controller.js[m
+[1mindex 8332138..8dd6073 100644[m
+[1m--- a/backend/src/controllers/order.controller.js[m
+[1m+++ b/backend/src/controllers/order.controller.js[m
+[36m@@ -227,8 +227,32 @@[m [mconst updateOrderStatus = async (req, res) => {[m
+   }[m
+ };[m
+ [m
+[32m+[m[32mconst getMyOrders = async (req, res) => {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const orders = await Order.find({[m
+[32m+[m[32m      user: req.user._id,[m
+[32m+[m[32m    })[m
+[32m+[m[32m      .populate("shop", "shopName address")[m
+[32m+[m[32m      .sort({ createdAt: -1 });[m
+[32m+[m
+[32m+[m[32m    return res.status(200).json({[m
+[32m+[m[32m      success: true,[m
+[32m+[m[32m      count: orders.length,[m
+[32m+[m[32m      orders,[m
+[32m+[m[32m    });[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    console.error("Get my orders error:", error);[m
+[32m+[m
+[32m+[m[32m    return res.status(500).json({[m
+[32m+[m[32m      success: false,[m
+[32m+[m[32m      message: "Server error while fetching your orders",[m
+[32m+[m[32m    });[m
+[32m+[m[32m  }[m
+[32m+[m[32m};[m
+[32m+[m
+ module.exports = {[m
+   createOrder,[m
+   getShopOrders,[m
+[32m+[m[32m  getMyOrders,[m
+   updateOrderStatus,[m
+ };[m
+\ No newline at end of file[m
+[1mdiff --git a/backend/src/controllers/product.controller.js b/backend/src/controllers/product.controller.js[m
+[1mindex 79582eb..6468612 100644[m
+[1m--- a/backend/src/controllers/product.controller.js[m
+[1m+++ b/backend/src/controllers/product.controller.js[m
+[36m@@ -171,29 +171,136 @@[m [mconst createProduct = async (req, res) => {[m
+         }[m
+     }[m
+ [m
+[31m-    const getProducts = async (req, res) => {[m
+[32m+[m[32mconst getProducts = async (req, res) => {[m
+   try {[m
+[32m+[m[32m    const {[m
+[32m+[m[32m      search,[m
+[32m+[m[32m      category,[m
+[32m+[m[32m      minPrice,[m
+[32m+[m[32m      maxPrice,[m
+[32m+[m[32m      sort = "newest",[m
+[32m+[m[32m    } = req.query;[m
+[32m+[m
+[32m+[m[32m    const filters = [];[m
+[32m+[m
+[32m+[m[32m    // 1. Available products only (supports existing legacy typo)[m
+[32m+[m[32m    filters.push({[m
+[32m+[m[32m      $or: [[m
+[32m+[m[32m        { isAvailable: true },[m
+[32m+[m[32m        { isAvalable: true },[m
+[32m+[m[32m      ],[m
+[32m+[m[32m    });[m
+[32m+[m
+[32m+[m[32m    // Escape special regex characters in user input[m
+[32m+[m[32m    const escapeRegex = (value) =>[m
+[32m+[m[32m      value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");[m
+[32m+[m
+[32m+[m[32m    // 2. Search by product name or description[m
+[32m+[m[32m    if (search && search.trim()) {[m
+[32m+[m[32m      const keyword = new RegExp([m
+[32m+[m[32m        escapeRegex(search.trim()),[m
+[32m+[m[32m        "i"[m
+[32m+[m[32m      );[m
+[32m+[m
+[32m+[m[32m      filters.push({[m
+[32m+[m[32m        $or: [[m
+[32m+[m[32m          { name: keyword },[m
+[32m+[m[32m          { description: keyword },[m
+[32m+[m[32m        ],[m
+[32m+[m[32m      });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // 3. Filter by category[m
+[32m+[m[32m    if (category && category.trim()) {[m
+[32m+[m[32m      filters.push({[m
+[32m+[m[32m        category: new RegExp([m
+[32m+[m[32m          `^${escapeRegex(category.trim())}$`,[m
+[32m+[m[32m          "i"[m
+[32m+[m[32m        ),[m
+[32m+[m[32m      });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // 4. Filter by price range[m
+[32m+[m[32m    const priceFilter = {};[m
+[32m+[m
+[32m+[m[32m    if (minPrice !== undefined) {[m
+[32m+[m[32m      const min = Number(minPrice);[m
+[32m+[m
+[32m+[m[32m      if (!Number.isFinite(min) || min < 0) {[m
+[32m+[m[32m        return res.status(400).json({[m
+[32m+[m[32m          success: false,[m
+[32m+[m[32m          message: "Invalid minimum price",[m
+[32m+[m[32m        });[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      priceFilter.$gte = min;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    if (maxPrice !== undefined) {[m
+[32m+[m[32m      const max = Number(maxPrice);[m
+[32m+[m
+[32m+[m[32m      if (!Number.isFinite(max) || max < 0) {[m
+[32m+[m[32m        return res.status(400).json({[m
+[32m+[m[32m          success: false,[m
+[32m+[m[32m          message: "Invalid maximum price",[m
+[32m+[m[32m        });[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      priceFilter.$lte = max;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    if ([m
+[32m+[m[32m      priceFilter.$gte !== undefined &&[m
+[32m+[m[32m      priceFilter.$lte !== undefined &&[m
+[32m+[m[32m      priceFilter.$gte > priceFilter.$lte[m
+[32m+[m[32m    ) {[m
+[32m+[m[32m      return res.status(400).json({[m
+[32m+[m[32m        success: false,[m
+[32m+[m[32m        message: "Minimum price cannot exceed maximum price",[m
+[32m+[m[32m      });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    if (Object.keys(priceFilter).length > 0) {[m
+[32m+[m[32m      filters.push({ price: priceFilter });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // 5. Whitelisted sorting options[m
+[32m+[m[32m    const sortOptions = {[m
+[32m+[m[32m      newest: { createdAt: -1 },[m
+[32m+[m[32m      price_asc: { price: 1 },[m
+[32m+[m[32m      price_desc: { price: -1 },[m
+[32m+[m[32m      name_asc: { name: 1 },[m
+[32m+[m[32m    };[m
+[32m+[m
+[32m+[m[32m    if (!sortOptions[sort]) {[m
+[32m+[m[32m      return res.status(400).json({[m
+[32m+[m[32m        success: false,[m
+[32m+[m[32m        message: "Invalid sort option",[m
+[32m+[m[32m      });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // 6. Fetch matching products[m
+     const products = await Product.find({[m
+[31m-      $or: [{ isAvailable: true }, { isAvalable: true }],[m
+[32m+[m[32m      $and: filters,[m
+     })[m
+       .populate("shop", "shopName address category isOpen")[m
+[31m-      .sort({ createdAt: -1 });[m
+[32m+[m[32m      .sort(sortOptions[sort]);[m
+ [m
+     return res.status(200).json({[m
+       success: true,[m
+       count: products.length,[m
+       products,[m
+     });[m
+[31m-[m
+   } catch (error) {[m
+     console.error("Get products error:", error);[m
+ [m
+     return res.status(500).json({[m
+       success: false,[m
+[31m-      message: error.message,[m
+[32m+[m[32m      message: "Server error while fetching products",[m
+     });[m
+   }[m
+ };[m
+[32m+[m
+    module.exports = {[m
+   createProduct,[m
+   updateProduct,[m
+[1mdiff --git a/backend/src/routes/order.router.js b/backend/src/routes/order.router.js[m
+[1mindex 33d499c..708ba5d 100644[m
+[1m--- a/backend/src/routes/order.router.js[m
+[1m+++ b/backend/src/routes/order.router.js[m
+[36m@@ -1,5 +1,5 @@[m
+ const express = require("express");[m
+[31m-const { createOrder,updateOrderStatus,getShopOrders} = require("../controllers/order.controller");[m
+[32m+[m[32mconst { createOrder,updateOrderStatus,getShopOrders , getMyOrders} = require("../controllers/order.controller");[m
+ const {protect,authorize} = require("../middleware/auth.middleware")[m
+ [m
+ [m
+[36m@@ -8,6 +8,8 @@[m [mconst router = express.Router();[m
+ router.post("/",protect , authorize("user"), createOrder);[m
+ [m
+ router.get("/", protect,authorize("shop_owner"),getShopOrders);[m
+[32m+[m
+[32m+[m[32mrouter.get("/my-orders", protect, authorize("user"), getMyOrders);[m
+ router.patch([m
+   "/:id/status",[m
+   protect,[m
+[1mdiff --git a/frontend/src/App.jsx b/frontend/src/App.jsx[m
+[1mindex f73e854..1c009af 100644[m
+[1m--- a/frontend/src/App.jsx[m
+[1m+++ b/frontend/src/App.jsx[m
+[36m@@ -11,11 +11,24 @@[m [mimport CustomerLogin from "./pages/auth/CustomerLogin";[m
+ import Register from "./pages/auth/Register";[m
+ import OwnerDashboard from "./pages/owner/OwnerDashboard";[m
+ import CustomerDashboard from "./pages/home/CustomerDashboard";[m
+[32m+[m[32mimport ForgotPassword from "./pages/auth/ForgotPassword";[m
+[32m+[m[32mimport ResetPassword from "./pages/auth/ResetPassword";[m
+[32m+[m
+ [m
+ function App() {[m
+   return ([m
+     <Routes>[m
+ [m
+[32m+[m[32m      <Route[m
+[32m+[m[32m  path="/customer/forgot-password"[m
+[32m+[m[32m  element={<ForgotPassword />}[m
+[32m+[m
+[32m+[m[41m  [m
+[32m+[m[32m/>[m
+[32m+[m[32m<Route[m
+[32m+[m[32m  path="/reset-password"[m
+[32m+[m[32m  element={<ResetPassword />}[m
+[32m+[m[32m/>[m
+       <Route[m
+   path="/owner/settings"[m
+   element={<OwnerSettings />}/>[m
+[1mdiff --git a/frontend/src/pages/auth/CustomerLogin.jsx b/frontend/src/pages/auth/CustomerLogin.jsx[m
+[1mindex 97bda47..76bca0d 100644[m
+[1m--- a/frontend/src/pages/auth/CustomerLogin.jsx[m
+[1m+++ b/frontend/src/pages/auth/CustomerLogin.jsx[m
+[36m@@ -1,3 +1,4 @@[m
+[32m+[m
+ import { useState } from "react";[m
+ import { Link, useNavigate } from "react-router-dom";[m
+ import "../../styles/customer-login.css";[m
+[36m@@ -9,23 +10,17 @@[m [mexport default function CustomerLogin() {[m
+   const [password, setPassword] = useState("");[m
+   const [showPassword, setShowPassword] = useState(false);[m
+   const [error, setError] = useState("");[m
+[31m-  const [showResetForm, setShowResetForm] = useState(false);[m
+[31m-  const [resetSent, setResetSent] = useState(false);[m
+ [m
+   const handleSubmit = (event) => {[m
+     event.preventDefault();[m
+[32m+[m[32m    setError("");[m
+ [m
+[31m-    if (!email.trim() || (!showResetForm && !password)) {[m
+[31m-      setError("Please complete all required fields.");[m
+[31m-      return;[m
+[31m-    }[m
+[31m-[m
+[31m-    if (showResetForm) {[m
+[31m-      setResetSent(true);[m
+[31m-      setError("");[m
+[32m+[m[32m    if (!email.trim() || !password) {[m
+[32m+[m[32m      setError("Please enter your email address and password.");[m
+       return;[m
+     }[m
+ [m
+[32m+[m[32m    // Demo login only; backend authentication is not connected yet.[m
+     navigate("/customer/dashboard");[m
+   };[m
+ [m
+[36m@@ -62,12 +57,10 @@[m [mexport default function CustomerLogin() {[m
+                 <span>✓</span>[m
+                 Trusted neighbourhood shops[m
+               </div>[m
+[31m-[m
+               <div>[m
+                 <span>✓</span>[m
+                 Convenient local shopping[m
+               </div>[m
+[31m-[m
+               <div>[m
+                 <span>✓</span>[m
+                 A simpler everyday experience[m
+[36m@@ -88,43 +81,19 @@[m [mexport default function CustomerLogin() {[m
+             </div>[m
+ [m
+             <div className="customer-form-heading">[m
+[31m-              <span>{showResetForm ? "ACCOUNT SUPPORT" : "WELCOME BACK"}</span>[m
+[31m-              <h2>{showResetForm ? "Reset your password" : "Login to your account"}</h2>[m
+[32m+[m[32m              <span>WELCOME BACK</span>[m
+[32m+[m[32m              <h2>Login to your account</h2>[m
+               <p>[m
+[31m-                {showResetForm[m
+[31m-                  ? "Enter your email and we’ll show a demo confirmation."[m
+[31m-                  : "Enter your details to continue shopping locally."}[m
+[32m+[m[32m                Enter your details to continue shopping locally.[m
+               </p>[m
+             </div>[m
+ [m
+[31m-            {resetSent ? ([m
+[31m-              <div className="customer-login-feedback" role="status">[m
+[31m-                <strong>Reset request received</strong>[m
+[31m-                <p>[m
+[31m-                  In a live version, password reset instructions would be sent[m
+[31m-                  to {email}.[m
+[31m-                </p>[m
+[31m-                <button[m
+[31m-                  type="button"[m
+[31m-                  className="customer-forgot-link"[m
+[31m-                  onClick={() => {[m
+[31m-                    setShowResetForm(false);[m
+[31m-                    setResetSent(false);[m
+[31m-                  }}[m
+[31m-                >[m
+[31m-                  Back to login[m
+[31m-                </button>[m
+[31m-              </div>[m
+[31m-            ) : ([m
+             <form[m
+               className="customer-login-form"[m
+               onSubmit={handleSubmit}[m
+             >[m
+               <div className="customer-input-group">[m
+[31m-                <label htmlFor="customer-email">[m
+[31m-                  Email address[m
+[31m-                </label>[m
+[31m-[m
+[32m+[m[32m                <label htmlFor="customer-email">Email address</label>[m
+                 <input[m
+                   id="customer-email"[m
+                   type="email"[m
+[36m@@ -139,50 +108,45 @@[m [mexport default function CustomerLogin() {[m
+                 />[m
+               </div>[m
+ [m
+[31m-              {!showResetForm && ([m
+[31m-                <div className="customer-input-group">[m
+[31m-                  <div className="customer-password-heading">[m
+[31m-                    <label htmlFor="customer-password">Password</label>[m
+[31m-                    <button[m
+[31m-                      type="button"[m
+[31m-                      className="customer-forgot-link"[m
+[31m-                      onClick={() => {[m
+[31m-                        setShowResetForm(true);[m
+[31m-                        setError("");[m
+[31m-                      }}[m
+[31m-                    >[m
+[31m-                      Forgot password?[m
+[31m-                    </button>[m
+[31m-                  </div>[m
+[31m-[m
+[31m-                  <div className="customer-password-wrapper">[m
+[31m-                    <input[m
+[31m-                      id="customer-password"[m
+[31m-                      type={showPassword ? "text" : "password"}[m
+[31m-                      placeholder="Enter your password"[m
+[31m-                      value={password}[m
+[31m-                      onChange={(event) => {[m
+[31m-                        setPassword(event.target.value);[m
+[31m-                        setError("");[m
+[31m-                      }}[m
+[31m-                      autoComplete="current-password"[m
+[31m-                      required[m
+[31m-                    />[m
+[31m-[m
+[31m-                    <button[m
+[31m-                      type="button"[m
+[31m-                      onClick={() =>[m
+[31m-                        setShowPassword((current) => !current)[m
+[31m-                      }[m
+[31m-                      aria-label={[m
+[31m-                        showPassword ? "Hide password" : "Show password"[m
+[31m-                      }[m
+[31m-                    >[m
+[31m-                      {showPassword ? "Hide" : "Show"}[m
+[31m-                    </button>[m
+[31m-                  </div>[m
+[32m+[m[32m              <div className="customer-input-group">[m
+[32m+[m[32m                <div className="customer-password-heading">[m
+[32m+[m[32m                  <label htmlFor="customer-password">Password</label>[m
+[32m+[m
+[32m+[m[32m                  <Link[m
+[32m+[m[32m                    to="/customer/forgot-password"[m
+[32m+[m[32m                    className="customer-forgot-link"[m
+[32m+[m[32m                  >[m
+[32m+[m[32m                    Forgot password?[m
+[32m+[m[32m                  </Link>[m
+                 </div>[m
+[31m-              )}[m
+[32m+[m
+[32m+[m[32m                <div className="customer-password-wrapper">[m
+[32m+[m[32m                  <input[m
+[32m+[m[32m                    id="customer-password"[m
+[32m+[m[32m                    type={showPassword ? "text" : "password"}[m
+[32m+[m[32m                    placeholder="Enter your password"[m
+[32m+[m[32m                    value={password}[m
+[32m+[m[32m                    onChange={(event) => {[m
+[32m+[m[32m                      setPassword(event.target.value);[m
+[32m+[m[32m                      setError("");[m
+[32m+[m[32m                    }}[m
+[32m+[m[32m                    autoComplete="current-password"[m
+[32m+[m[32m                    required[m
+[32m+[m[32m                  />[m
+[32m+[m
+[32m+[m[32m                  <button[m
+[32m+[m[32m                    type="button"[m
+[32m+[m[32m                    onClick={() =>[m
+[32m+[m[32m                      setShowPassword((current) => !current)[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                    aria-label={[m
+[32m+[m[32m                      showPassword ? "Hide password" : "Show password"[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                  >[m
+[32m+[m[32m                    {showPassword ? "Hide" : "Show"}[m
+[32m+[m[32m                  </button>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m              </div>[m
+ [m
+               {error && ([m
+                 <p className="customer-login-error" role="alert">[m
+[36m@@ -194,38 +158,20 @@[m [mexport default function CustomerLogin() {[m
+                 type="submit"[m
+                 className="customer-login-button"[m
+               >[m
+[31m-                {showResetForm ? "Send reset instructions" : "Login to your account"} <span>→</span>[m
+[32m+[m[32m                Login to your account <span>→</span>[m
+               </button>[m
+             </form>[m
+[31m-            )}[m
+[31m-[m
+[31m-            {showResetForm && !resetSent && ([m
+[31m-              <button[m
+[31m-                type="button"[m
+[31m-                className="customer-forgot-link customer-reset-back"[m
+[31m-                onClick={() => {[m
+[31m-                  setShowResetForm(false);[m
+[31m-                  setError("");[m
+[31m-                }}[m
+[31m-              >[m
+[31m-                ← Back to login[m
+[31m-              </button>[m
+[31m-            )}[m
+ [m
+[31m-            {!showResetForm && ([m
+             <div className="customer-login-separator">[m
+               <span>NEW TO GHAR TAK?</span>[m
+             </div>[m
+[31m-            )}[m
+ [m
+[31m-            {!showResetForm && ([m
+[31m-              <Link[m
+[31m-                to="/customer/register"[m
+[31m-                className="customer-signup-button"[m
+[31m-              >[m
+[31m-                Create a customer account[m
+[31m-              </Link>[m
+[31m-            )}[m
+[32m+[m[32m            <Link[m
+[32m+[m[32m              to="/customer/register"[m
+[32m+[m[32m              className="customer-signup-button"[m
+[32m+[m[32m            >[m
+[32m+[m[32m              Create a customer account[m
+[32m+[m[32m            </Link>[m
+ [m
+             <p className="customer-login-terms">[m
+               Demo customer sign-in only. No credentials are sent or verified.[m
+[36m@@ -235,4 +181,4 @@[m [mexport default function CustomerLogin() {[m
+       </div>[m
+     </main>[m
+   );[m
+[31m-}[m
+\ No newline at end of file[m
+[32m+[m[32m}[m
+[1mdiff --git a/frontend/src/pages/auth/ForgotPassword.jsx b/frontend/src/pages/auth/ForgotPassword.jsx[m
+[1mindex bf19224..9eca410 100644[m
+[1m--- a/frontend/src/pages/auth/ForgotPassword.jsx[m
+[1m+++ b/frontend/src/pages/auth/ForgotPassword.jsx[m
+[36m@@ -7,25 +7,49 @@[m [mexport default function ForgotPassword() {[m
+   const [message, setMessage] = useState("");[m
+   const [error, setError] = useState("");[m
+ [m
+[31m-  const handleSubmit = (event) => {[m
+[31m-    event.preventDefault();[m
+[32m+[m[32mconst handleSubmit = async (event) => {[m
+[32m+[m[32m  event.preventDefault();[m
+[32m+[m
+[32m+[m[32m  setMessage("");[m
+[32m+[m[32m  setError("");[m
+[32m+[m
+[32m+[m[32m  const normalizedEmail = email.trim().toLowerCase();[m
+[32m+[m
+[32m+[m[32m  if (!normalizedEmail) {[m
+[32m+[m[32m    setError("Please enter your registered email address.");[m
+[32m+[m[32m    return;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const response = await fetch([m
+[32m+[m[32m      "http://localhost:5000/api/auth/forgot-password",[m
+[32m+[m[32m      {[m
+[32m+[m[32m        method: "POST",[m
+[32m+[m[32m        headers: {[m
+[32m+[m[32m          "Content-Type": "application/json",[m
+[32m+[m[32m        },[m
+[32m+[m[32m        body: JSON.stringify({[m
+[32m+[m[32m          email: normalizedEmail,[m
+[32m+[m[32m        }),[m
+[32m+[m[32m      }[m
+[32m+[m[32m    );[m
+ [m
+[31m-    setMessage("");[m
+[31m-    setError("");[m
+[32m+[m[32m    const data = await response.json();[m
+ [m
+[31m-    if (!email.trim()) {[m
+[31m-      setError("Please enter your registered email address.");[m
+[32m+[m[32m    if (!response.ok || !data.success) {[m
+[32m+[m[32m      setError(data.message || "Unable to process your request.");[m
+       return;[m
+     }[m
+ [m
+[31m-    // Frontend demonstration only.[m
+[31m-    // Connect this form to the backend password-reset API[m
+[31m-    // before claiming that an email has been sent.[m
+[31m-[m
+     setMessage([m
+[31m-      "Your request is ready. Password reset email delivery requires backend integration."[m
+[32m+[m[32m      data.message ||[m
+[32m+[m[32m        "If an account exists with this email, a reset link will be sent."[m
+     );[m
+[31m-  };[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    setError("Unable to connect to the server. Please try again.");[m
+[32m+[m[32m  }[m
+[32m+[m[32m};[m
+[32m+[m
+ [m
+   return ([m
+     <main className="customer-login-page">[m

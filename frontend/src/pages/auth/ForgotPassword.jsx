@@ -7,25 +7,49 @@ export default function ForgotPassword() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+const handleSubmit = async (event) => {
+  event.preventDefault();
 
-    setMessage("");
-    setError("");
+  setMessage("");
+  setError("");
 
-    if (!email.trim()) {
-      setError("Please enter your registered email address.");
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedEmail) {
+    setError("Please enter your registered email address.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/auth/forgot-password",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      setError(data.message || "Unable to process your request.");
       return;
     }
 
-    // Frontend demonstration only.
-    // Connect this form to the backend password-reset API
-    // before claiming that an email has been sent.
-
     setMessage(
-      "Your request is ready. Password reset email delivery requires backend integration."
+      data.message ||
+        "If an account exists with this email, a reset link will be sent."
     );
-  };
+  } catch (error) {
+    setError("Unable to connect to the server. Please try again.");
+  }
+};
+
 
   return (
     <main className="customer-login-page">

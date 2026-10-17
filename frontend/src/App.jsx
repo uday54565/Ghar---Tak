@@ -11,11 +11,24 @@ import CustomerLogin from "./pages/auth/CustomerLogin";
 import Register from "./pages/auth/Register";
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
 import CustomerDashboard from "./pages/home/CustomerDashboard";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
+
 
 function App() {
   return (
     <Routes>
 
+      <Route
+  path="/customer/forgot-password"
+  element={<ForgotPassword />}
+
+  
+/>
+<Route
+  path="/reset-password"
+  element={<ResetPassword />}
+/>
       <Route
   path="/owner/settings"
   element={<OwnerSettings />}/>

@@ -227,8 +227,32 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
+const getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({
+      user: req.user._id,
+    })
+      .populate("shop", "shopName address")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: orders.length,
+      orders,
+    });
+  } catch (error) {
+    console.error("Get my orders error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching your orders",
+    });
+  }
+};
+
 module.exports = {
   createOrder,
   getShopOrders,
+  getMyOrders,
   updateOrderStatus,
 };

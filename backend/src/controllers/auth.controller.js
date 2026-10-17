@@ -488,7 +488,7 @@ const resetPassword = async ( req , res) => {
 
   }
 
-  if( newPassword < 8 || newPassword > 15){
+  if( newPassword.length< 8 || newPassword.length > 15){
     return res.status(400).json({
 
       success : false,
@@ -528,6 +528,14 @@ const resetPassword = async ( req , res) => {
     user.lockUntil = null;
 
     await user.save();
+
+    const savedUser = await User.findById(user._id).select("+password");
+
+console.log("Password saved:", Boolean(savedUser?.password));
+console.log(
+  "New password matches:",
+  await bcrypt.compare(newPassword, savedUser.password)
+);
 
     return res.status(200).json({
       success: true,

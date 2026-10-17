@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../../styles/customer-login.css";
@@ -9,23 +10,17 @@ export default function CustomerLogin() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [showResetForm, setShowResetForm] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    setError("");
 
-    if (!email.trim() || (!showResetForm && !password)) {
-      setError("Please complete all required fields.");
+    if (!email.trim() || !password) {
+      setError("Please enter your email address and password.");
       return;
     }
 
-    if (showResetForm) {
-      setResetSent(true);
-      setError("");
-      return;
-    }
-
+    // Demo login only; backend authentication is not connected yet.
     navigate("/customer/dashboard");
   };
 
@@ -62,12 +57,10 @@ export default function CustomerLogin() {
                 <span>✓</span>
                 Trusted neighbourhood shops
               </div>
-
               <div>
                 <span>✓</span>
                 Convenient local shopping
               </div>
-
               <div>
                 <span>✓</span>
                 A simpler everyday experience
@@ -88,43 +81,19 @@ export default function CustomerLogin() {
             </div>
 
             <div className="customer-form-heading">
-              <span>{showResetForm ? "ACCOUNT SUPPORT" : "WELCOME BACK"}</span>
-              <h2>{showResetForm ? "Reset your password" : "Login to your account"}</h2>
+              <span>WELCOME BACK</span>
+              <h2>Login to your account</h2>
               <p>
-                {showResetForm
-                  ? "Enter your email and we’ll show a demo confirmation."
-                  : "Enter your details to continue shopping locally."}
+                Enter your details to continue shopping locally.
               </p>
             </div>
 
-            {resetSent ? (
-              <div className="customer-login-feedback" role="status">
-                <strong>Reset request received</strong>
-                <p>
-                  In a live version, password reset instructions would be sent
-                  to {email}.
-                </p>
-                <button
-                  type="button"
-                  className="customer-forgot-link"
-                  onClick={() => {
-                    setShowResetForm(false);
-                    setResetSent(false);
-                  }}
-                >
-                  Back to login
-                </button>
-              </div>
-            ) : (
             <form
               className="customer-login-form"
               onSubmit={handleSubmit}
             >
               <div className="customer-input-group">
-                <label htmlFor="customer-email">
-                  Email address
-                </label>
-
+                <label htmlFor="customer-email">Email address</label>
                 <input
                   id="customer-email"
                   type="email"
@@ -139,50 +108,45 @@ export default function CustomerLogin() {
                 />
               </div>
 
-              {!showResetForm && (
-                <div className="customer-input-group">
-                  <div className="customer-password-heading">
-                    <label htmlFor="customer-password">Password</label>
-                    <button
-                      type="button"
-                      className="customer-forgot-link"
-                      onClick={() => {
-                        setShowResetForm(true);
-                        setError("");
-                      }}
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
+              <div className="customer-input-group">
+                <div className="customer-password-heading">
+                  <label htmlFor="customer-password">Password</label>
 
-                  <div className="customer-password-wrapper">
-                    <input
-                      id="customer-password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(event) => {
-                        setPassword(event.target.value);
-                        setError("");
-                      }}
-                      autoComplete="current-password"
-                      required
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowPassword((current) => !current)
-                      }
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
-                    >
-                      {showPassword ? "Hide" : "Show"}
-                    </button>
-                  </div>
+                  <Link
+                    to="/customer/forgot-password"
+                    className="customer-forgot-link"
+                  >
+                    Forgot password?
+                  </Link>
                 </div>
-              )}
+
+                <div className="customer-password-wrapper">
+                  <input
+                    id="customer-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+                      setError("");
+                    }}
+                    autoComplete="current-password"
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword((current) => !current)
+                    }
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
 
               {error && (
                 <p className="customer-login-error" role="alert">
@@ -194,38 +158,20 @@ export default function CustomerLogin() {
                 type="submit"
                 className="customer-login-button"
               >
-                {showResetForm ? "Send reset instructions" : "Login to your account"} <span>→</span>
+                Login to your account <span>→</span>
               </button>
             </form>
-            )}
 
-            {showResetForm && !resetSent && (
-              <button
-                type="button"
-                className="customer-forgot-link customer-reset-back"
-                onClick={() => {
-                  setShowResetForm(false);
-                  setError("");
-                }}
-              >
-                ← Back to login
-              </button>
-            )}
-
-            {!showResetForm && (
             <div className="customer-login-separator">
               <span>NEW TO GHAR TAK?</span>
             </div>
-            )}
 
-            {!showResetForm && (
-              <Link
-                to="/customer/register"
-                className="customer-signup-button"
-              >
-                Create a customer account
-              </Link>
-            )}
+            <Link
+              to="/customer/register"
+              className="customer-signup-button"
+            >
+              Create a customer account
+            </Link>
 
             <p className="customer-login-terms">
               Demo customer sign-in only. No credentials are sent or verified.
