@@ -1,0 +1,65 @@
+[33m5cf2c85[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfix/owner-management[m[33m)[m refs/heads/fix/owner-management@{Sun Oct 11 15:41:07 2026}: pull origin main: Merge made by the 'ort' strategy.
+[33m5cf2c85[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfix/owner-management[m[33m)[m HEAD@{Sun Oct 11 15:41:07 2026}: pull origin main: Merge made by the 'ort' strategy.
+[33m6c9d7c2[m[33m ([m[1;31morigin/owner-management[m[33m)[m refs/heads/fix/owner-management@{Sun Oct 11 14:22:38 2026}: branch: Created from origin/owner-management
+[33m6c9d7c2[m[33m ([m[1;31morigin/owner-management[m[33m)[m HEAD@{Sun Oct 11 14:22:38 2026}: checkout: moving from feature/shop-orders to fix/owner-management
+[33mdca3049[m[33m ([m[1;32mfeature/shop-orders[m[33m)[m refs/heads/feature/shop-orders@{Sun Oct 11 14:22:24 2026}: commit: security done
+[33mdca3049[m[33m ([m[1;32mfeature/shop-orders[m[33m)[m HEAD@{Sun Oct 11 14:22:24 2026}: commit: security done
+[33m461620d[m[33m ([m[1;31morigin/dashboard[m[33m)[m refs/remotes/origin/dashboard@{Sun Oct 11 14:16:07 2026}: fetch origin: storing head
+[33m3b38d6f[m[33m ([m[1;31morigin/feature/orders[m[33m)[m refs/remotes/origin/feature/orders@{Sun Oct 11 14:16:07 2026}: fetch origin: fast-forward
+[33m6c9d7c2[m[33m ([m[1;31morigin/owner-management[m[33m)[m refs/remotes/origin/owner-management@{Sun Oct 11 14:16:07 2026}: fetch origin: storing head
+[33mf086ad6[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m, [m[1;32mfeature/orders[m[33m)[m refs/heads/feature/shop-orders@{Thu Oct 8 02:09:12 2026}: branch: Created from HEAD
+[33mf086ad6[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m, [m[1;32mfeature/orders[m[33m)[m refs/heads/main@{Thu Oct 8 02:09:12 2026}: pull origin main: Fast-forward
+[33mf086ad6[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m, [m[1;32mfeature/orders[m[33m)[m HEAD@{Thu Oct 8 02:09:12 2026}: checkout: moving from main to feature/shop-orders
+[33mf086ad6[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m, [m[1;32mfeature/orders[m[33m)[m HEAD@{Thu Oct 8 02:09:12 2026}: pull origin main: Fast-forward
+[33m3ff5250[m HEAD@{Thu Oct 8 02:09:10 2026}: checkout: moving from feature/orders to main
+[33mf086ad6[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m, [m[1;32mfeature/orders[m[33m)[m refs/heads/feature/orders@{Thu Oct 8 02:02:44 2026}: pull origin main: Fast-forward
+[33mf086ad6[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m, [m[1;32mfeature/orders[m[33m)[m refs/remotes/origin/main@{Thu Oct 8 02:02:44 2026}: pull origin main: fast-forward
+[33mf086ad6[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m, [m[1;32mfeature/orders[m[33m)[m HEAD@{Thu Oct 8 02:02:44 2026}: pull origin main: Fast-forward
+[33m85aecef[m refs/remotes/origin/feature/orders@{Thu Oct 8 01:51:40 2026}: update by push
+[33m85aecef[m refs/heads/feature/orders@{Thu Oct 8 01:50:36 2026}: commit: order feature is done
+[33m85aecef[m HEAD@{Thu Oct 8 01:50:36 2026}: commit: order feature is done
+[33m3ff5250[m refs/heads/feature/orders@{Thu Oct 8 01:05:39 2026}: branch: Created from HEAD
+[33m3ff5250[m HEAD@{Thu Oct 8 01:05:39 2026}: checkout: moving from main to feature/orders
+[33m3ff5250[m HEAD@{Thu Oct 8 01:05:36 2026}: checkout: moving from feature/cart to main
+[33me25e0c2[m[33m ([m[1;31morigin/feature/cart[m[33m, [m[1;32mfeature/cart[m[33m)[m refs/remotes/origin/feature/cart@{Wed Oct 7 02:01:53 2026}: update by push
+[33me25e0c2[m[33m ([m[1;31morigin/feature/cart[m[33m, [m[1;32mfeature/cart[m[33m)[m refs/heads/feature/cart@{Wed Oct 7 02:00:13 2026}: commit: cart feature is done
+[33me25e0c2[m[33m ([m[1;31morigin/feature/cart[m[33m, [m[1;32mfeature/cart[m[33m)[m HEAD@{Wed Oct 7 02:00:13 2026}: commit: cart feature is done
+[33m3ff5250[m refs/heads/feature/cart@{Wed Oct 7 00:37:57 2026}: branch: Created from HEAD
+[33m3ff5250[m HEAD@{Wed Oct 7 00:37:57 2026}: checkout: moving from main to feature/cart
+[33m3ff5250[m refs/heads/main@{Mon Oct 5 14:30:16 2026}: pull origin main: Fast-forward
+[33m3ff5250[m refs/remotes/origin/main@{Mon Oct 5 14:30:16 2026}: pull origin main: fast-forward
+[33m3ff5250[m HEAD@{Mon Oct 5 14:30:16 2026}: pull origin main: Fast-forward
+[33mf12609c[m HEAD@{Mon Oct 5 14:30:06 2026}: checkout: moving from feature/backend-foundation to main
+[33m3663669[m[33m ([m[1;31morigin/feature/backend-foundation[m[33m, [m[1;32mfeature/backend-foundation[m[33m)[m refs/remotes/origin/feature/backend-foundation@{Mon Oct 5 14:24:24 2026}: update by push
+[33m3663669[m[33m ([m[1;31morigin/feature/backend-foundation[m[33m, [m[1;32mfeature/backend-foundation[m[33m)[m refs/heads/feature/backend-foundation@{Mon Oct 5 14:24:21 2026}: commit: chore: update auth controller and add gitignore
+[33m3663669[m[33m ([m[1;31morigin/feature/backend-foundation[m[33m, [m[1;32mfeature/backend-foundation[m[33m)[m HEAD@{Mon Oct 5 14:24:21 2026}: commit: chore: update auth controller and add gitignore
+[33m1a7cf6f[m refs/heads/feature/backend-foundation@{Mon Oct 5 14:07:02 2026}: pull origin main: Merge made by the 'ort' strategy.
+[33m6469e4c[m refs/remotes/origin/main@{Mon Oct 5 14:07:02 2026}: pull origin main: fast-forward
+[33m1a7cf6f[m HEAD@{Mon Oct 5 14:07:02 2026}: pull origin main: Merge made by the 'ort' strategy.
+[33mcdad303[m refs/remotes/origin/feature/backend-foundation@{Mon Oct 5 14:00:15 2026}: update by push
+[33mcdad303[m refs/heads/feature/backend-foundation@{Mon Oct 5 13:59:34 2026}: commit: feat: add backend foundation
+[33mcdad303[m HEAD@{Mon Oct 5 13:59:34 2026}: commit: feat: add backend foundation
+[33mf12609c[m refs/heads/feature/backend-foundation@{Mon Oct 5 13:59:05 2026}: branch: Created from HEAD
+[33mf12609c[m HEAD@{Mon Oct 5 13:59:05 2026}: checkout: moving from main to feature/backend-foundation
+[33mf12609c[m refs/heads/main@{Sun Oct 4 12:01:43 2026}: pull origin main: Fast-forward
+[33mf12609c[m HEAD@{Sun Oct 4 12:01:43 2026}: pull origin main: Fast-forward
+[33mf12609c[m refs/remotes/origin/main@{Sun Oct 4 12:01:42 2026}: pull origin main: fast-forward
+[33m7184e00[m HEAD@{Sun Oct 4 12:01:39 2026}: checkout: moving from main to main
+[33m7184e00[m HEAD@{Sat Oct 3 15:29:55 2026}: checkout: moving from main to main
+[33m7184e00[m refs/heads/main@{Sat Oct 3 15:28:50 2026}: pull origin main: Fast-forward
+[33m7184e00[m refs/remotes/origin/main@{Sat Oct 3 15:28:50 2026}: pull origin main: fast-forward
+[33m7184e00[m HEAD@{Sat Oct 3 15:28:50 2026}: pull origin main: Fast-forward
+[33maaa8bec[m HEAD@{Sat Oct 3 15:28:48 2026}: checkout: moving from feature/shop-owner-auth to main
+[33m55f2888[m[33m ([m[1;31morigin/feature/shop-owner-auth[m[33m, [m[1;32mfeature/shop-owner-auth[m[33m)[m refs/remotes/origin/feature/shop-owner-auth@{Sat Oct 3 15:04:36 2026}: update by push
+[33m55f2888[m[33m ([m[1;31morigin/feature/shop-owner-auth[m[33m, [m[1;32mfeature/shop-owner-auth[m[33m)[m refs/heads/feature/shop-owner-auth@{Sat Oct 3 15:04:25 2026}: commit: feat: add unified authentication UI
+[33m55f2888[m[33m ([m[1;31morigin/feature/shop-owner-auth[m[33m, [m[1;32mfeature/shop-owner-auth[m[33m)[m HEAD@{Sat Oct 3 15:04:25 2026}: commit: feat: add unified authentication UI
+[33m3c3c48d[m[33m ([m[1;31morigin/feature/frontend-foundation[m[33m, [m[1;32mfeature/frontend-foundation[m[33m)[m refs/heads/feature/shop-owner-auth@{Sat Oct 3 13:41:04 2026}: branch: Created from HEAD
+[33m3c3c48d[m[33m ([m[1;31morigin/feature/frontend-foundation[m[33m, [m[1;32mfeature/frontend-foundation[m[33m)[m HEAD@{Sat Oct 3 13:41:04 2026}: checkout: moving from feature/frontend-foundation to feature/shop-owner-auth
+[33m3c3c48d[m[33m ([m[1;31morigin/feature/frontend-foundation[m[33m, [m[1;32mfeature/frontend-foundation[m[33m)[m refs/remotes/origin/feature/frontend-foundation@{Sat Oct 3 13:10:34 2026}: update by push
+[33m3c3c48d[m[33m ([m[1;31morigin/feature/frontend-foundation[m[33m, [m[1;32mfeature/frontend-foundation[m[33m)[m refs/heads/feature/frontend-foundation@{Sat Oct 3 12:58:33 2026}: commit: feat: complete landing page UI
+[33m3c3c48d[m[33m ([m[1;31morigin/feature/frontend-foundation[m[33m, [m[1;32mfeature/frontend-foundation[m[33m)[m HEAD@{Sat Oct 3 12:58:33 2026}: commit: feat: complete landing page UI
+[33maaa8bec[m refs/heads/feature/frontend-foundation@{Sat Oct 3 12:17:25 2026}: branch: Created from HEAD
+[33maaa8bec[m HEAD@{Sat Oct 3 12:17:25 2026}: checkout: moving from main to feature/frontend-foundation
+[33maaa8bec[m refs/heads/main@{Sat Oct 3 11:57:09 2026}: clone: from https://github.com/uday54565/Ghar---Tak.git
+[33maaa8bec[m refs/remotes/origin/HEAD@{Sat Oct 3 11:57:09 2026}: clone: from https://github.com/uday54565/Ghar---Tak.git
+[33maaa8bec[m HEAD@{Sat Oct 3 11:57:09 2026}: clone: from https://github.com/uday54565/Ghar---Tak.git

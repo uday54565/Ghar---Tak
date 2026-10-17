@@ -10,6 +10,8 @@ const productRouter = require("./routes/product.routes");
 
 const orderRouter = require("./routes/order.router");
 const cartRouter = require("./routes/cart.routes");
+const { generalLimiter} = require("./middleware/rateLimiter")
+
 
 const app = express();
 
@@ -52,5 +54,10 @@ app.use("/api/products" , productRouter);
 app.use("/api/cart",cartRouter);
 
 app.use("/api/orders",orderRouter);
+
+app.use(generalLimiter);
+
+
+
 
 module.exports = app;

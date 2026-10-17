@@ -39,6 +39,43 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    loginAttempts: {
+    type: Number,
+    default: 0
+},
+lockUntil: {
+    type: Date,
+    default: null
+},
+emailOtpHash: { type: String, default: null },
+emailOtpExpiresAt: { type: Date, default: null },
+emailOtpAttempts: { type: Number, default: 0 },
+emailOtpLastSentAt: { type: Date, default: null },
+
+resetOtpHash: { type: String, default: null },
+resetOtpExpiresAt: { type: Date, default: null },
+resetOtpAttempts: { type: Number, default: 0 },
+resetOtpLastSentAt: { type: Date, default: null },
+
+resetOtpVerified: { type: Boolean, default: false },
+resetOtpVerifiedUntil: { type: Date, default: null },
+
+pendingShopName: { type: String, default: null },
+pendingShopAddress: { type: String, default: null },
+
+resetTokenHash: {
+  type: String,
+  default: null
+},
+resetTokenExpiresAt: {
+  type: Date,
+  default: null
+},
+resetTokenLastSentAt: {
+  type: Date,
+  default: null
+},
+
   },
   {
     timestamps: true,

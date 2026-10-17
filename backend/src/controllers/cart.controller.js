@@ -2,6 +2,17 @@ const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const Shop = require("../models/Shop");
 
+const getProductAvailability = (product) => {
+  if (!product) return false;
+  if (typeof product.isAvailable === "boolean") {
+    return product.isAvailable;
+  }
+  if (typeof product.isAvalable === "boolean") {
+    return product.isAvalable;
+  }
+  return true;
+};
+
 const calculateTotals = (cart) => {
   const subtotal = cart.items.reduce((total, item) => {
     return total + item.price * item.quantity;
@@ -62,7 +73,7 @@ const addToCart = async (req, res) => {
       });
     }
 
-    if (!product.isAvailable) {
+    if (!getProductAvailability(product)) {
       return res.status(400).json({
         success: false,
         message: "Product is currently unavailable",
@@ -178,7 +189,7 @@ const updateCartItem = async (req, res) => {
 
     const product = await Product.findById(productId);
 
-    if (!product || !product.isAvailable) {
+    if (!product || !getProductAvailability(product)) {
       return res.status(400).json({
         success: false,
         message: "Product is unavailable",
