@@ -14,6 +14,11 @@ function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
+  const [otp, setOtp] = useState("");
+const [otpGenerated, setOtpGenerated] = useState(false);
+const [otpVerified, setOtpVerified] = useState(false);
+const [otpMessage, setOtpMessage] = useState("");
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -181,27 +186,84 @@ function Register() {
               </div>
             </div>
 
-            {/* Phone */}
-            <div className="input-group">
-              <label htmlFor="phone">Phone Number</label>
+           {/* Phone */}
+<div className="input-group">
+  <label htmlFor="phone">Phone Number</label>
 
-              <div className="input-wrapper phone-input">
-                <span className="country-code">+91</span>
+  <div className="input-wrapper phone-input">
+    <span className="country-code">+91</span>
 
-                <input
-                  id="phone"
-                  type="tel"
-                  placeholder="Enter phone number"
-                  maxLength={10}
-                  value={phone}
-                  onChange={(event) => {
-                    setPhone(event.target.value.replace(/\D/g, "").slice(0, 10));
-                    setError("");
-                  }}
-                  required
-                />
-              </div>
-            </div>
+    <input
+      id="phone"
+      type="tel"
+      placeholder="Enter phone number"
+      maxLength="10"
+      pattern="[0-9]{10}"
+      required
+      onChange={() => {
+        setOtpGenerated(false);
+        setOtpVerified(false);
+        setOtp("");
+        setOtpMessage("");
+      }}
+    />
+  </div>
+</div>
+
+{/* OTP Generation */}
+<div className="input-group otp-section">
+  <label>OTP Verification</label>
+
+  <button
+    type="button"
+    className="auth-submit otp-generate-btn"
+    onClick={() => {
+      setOtpGenerated(true);
+      setOtpVerified(false);
+      setOtp("");
+      setOtpMessage(
+        "OTP interface opened. Connect the backend to send a real OTP."
+      );
+    }}
+  >
+    Generate OTP <span>→</span>
+  </button>
+
+  {otpGenerated && (
+    <>
+      <div className="input-wrapper otp-input-wrapper">
+        <input
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          placeholder="Enter 6-digit OTP"
+          value={otp}
+          onChange={(e) => {
+            setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+            setOtpVerified(false);
+          }}
+          aria-label="Enter OTP"
+        />
+      </div>
+
+      <button
+        type="button"
+        className="otp-verify-btn"
+        onClick={() => {
+          setOtpMessage(
+            "OTP verification requires backend integration."
+          );
+        }}
+      >
+        Verify OTP
+      </button>
+
+      <p className="otp-message" role="status">
+        {otpMessage}
+      </p>
+    </>
+  )}
+</div>
 
             {/* Shop Address */}
             {role === "shop_owner" && (
