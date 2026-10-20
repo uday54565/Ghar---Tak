@@ -1,19 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import OwnerSidebar from "../../components/owner/OwnerSidebar";
 import OwnerHeader from "../../components/owner/OwnerHeader";
 import "../../styles/owner-dashboard.css";
+import { useAuth } from "../../context/useAuth";
+import { authApi, getErrorMessage, userApi } from "../../services/api";
 
 function OwnerSettings() {
+  const navigate = useNavigate();
+  const { user, logout, updateUser } = useAuth();
   const [profile, setProfile] = useState({
-    name: "Shop Owner",
-    email: "owner@example.com",
-    phone: "9876543210",
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
   });
 
-  const [notifications, setNotifications] = useState({
-    newOrders: true,
-    orderUpdates: true,
-  });
+  const [notifications, setNotifications] = useState(
+    user?.notificationPreferences || { newOrders: true, orderUpdates: true }
+  );
 
   const [passwords, setPasswords] = useState({
     current: "",
@@ -23,6 +27,7 @@ function OwnerSettings() {
 
   const [saved, setSaved] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [error, setError] = useState("");
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
@@ -46,17 +51,23 @@ function OwnerSettings() {
     setPasswordMessage("");
   };
 
-  const saveProfile = (e) => {
+  const saveProfile = async (e) => {
     e.preventDefault();
-
-    setSaved(true);
-
-    window.setTimeout(() => {
-      setSaved(false);
-    }, 2500);
+    setError("");
+    try {
+      const { data } = await userApi.updateProfile({
+        name: profile.name,
+        phone: profile.phone,
+      });
+      updateUser(data.user);
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2500);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    }
   };
 
-  const updatePassword = (e) => {
+  const updatePassword = async (e) => {
     e.preventDefault();
 
     if (
@@ -80,20 +91,30 @@ function OwnerSettings() {
       return;
     }
 
-    setPasswordMessage("Password updated successfully.");
-
-    setPasswords({
-      current: "",
-      newPassword: "",
-      confirm: "",
-    });
+    try {
+      const { data } = await authApi.updatePassword({
+        currentPassword: passwords.current,
+        newPassword: passwords.newPassword,
+        confirmPassword: passwords.confirm,
+      });
+      setPasswordMessage(data.message);
+      setPasswords({ current: "", newPassword: "", confirm: "" });
+    } catch (requestError) {
+      setPasswordMessage(getErrorMessage(requestError));
+    }
   };
 
-  const toggleNotification = (key) => {
-    setNotifications((current) => ({
-      ...current,
-      [key]: !current[key],
-    }));
+  const toggleNotification = async (key) => {
+    const nextPreferences = { ...notifications, [key]: !notifications[key] };
+    try {
+      const { data } = await userApi.updateProfile({
+        notificationPreferences: nextPreferences,
+      });
+      setNotifications(data.user.notificationPreferences);
+      updateUser(data.user);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    }
   };
 
   return (
@@ -104,6 +125,7 @@ function OwnerSettings() {
         <OwnerHeader />
 
         <section className="owner-content">
+          {error && <p className="register-error" role="alert">{error}</p>}
           <div className="panel-header">
             <div>
               <p className="panel-label">ACCOUNT SETTINGS</p>
@@ -188,7 +210,7 @@ function OwnerSettings() {
                     name="email"
                     type="email"
                     value={profile.email}
-                    onChange={handleProfileChange}
+                    readOnly
                   />
                 </div>
 
@@ -386,37 +408,15 @@ function OwnerSettings() {
                 <button
                   type="button"
                   className="danger-outline-button"
-                  onClick={() =>
-                    window.alert(
-                      "Logout will be connected to authentication later."
-                    )
-                  }
+                  onClick={() => {
+                    logout();
+                    navigate("/login");
+                  }}
                 >
                   Logout
                 </button>
               </div>
 
-              <div className="danger-action">
-                <div>
-                  <strong>Delete account</strong>
-
-                  <span>
-                    Permanently remove your owner account.
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  className="danger-outline-button"
-                  onClick={() =>
-                    window.alert(
-                      "Account deletion will be connected to the backend later."
-                    )
-                  }
-                >
-                  Delete Account
-                </button>
-              </div>
             </section>
           </div>
         </section>

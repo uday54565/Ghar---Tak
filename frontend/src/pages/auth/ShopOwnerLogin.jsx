@@ -1,22 +1,32 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./ShopOwnerAuth.css";
+import { useAuth } from "../../context/useAuth";
+import { getErrorMessage } from "../../services/api";
 
 function ShopOwnerLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [role, setRole] = useState("user");
   const [showPassword, setShowPassword] = useState(false);
+  const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
- const handleSubmit = (e) => {
-  e.preventDefault();
-
-  if (role === "shop_owner") {
-    navigate("/owner/dashboard");
-    return;
-  }
-
-  navigate("/customer/dashboard");
-};
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await login({ emailOrPhone: emailOrPhone.trim(), password }, role);
+      navigate(role === "shop_owner" ? "/owner/dashboard" : "/customer/dashboard");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="auth-page">
@@ -107,6 +117,8 @@ function ShopOwnerLogin() {
                   id="loginEmail"
                   type="text"
                   placeholder="Enter email or phone number"
+                  value={emailOrPhone}
+                  onChange={(event) => setEmailOrPhone(event.target.value)}
                   required
                 />
               </div>
@@ -127,6 +139,8 @@ function ShopOwnerLogin() {
                   id="loginPassword"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   required
                 />
 
@@ -143,8 +157,10 @@ function ShopOwnerLogin() {
               </div>
             </div>
 
-            <button type="submit" className="auth-submit">
-              Login
+            {error && <p className="register-error" role="alert">{error}</p>}
+
+            <button type="submit" className="auth-submit" disabled={loading}>
+              {loading ? "Signing in..." : "Login"}
               <span>→</span>
             </button>
           </form>

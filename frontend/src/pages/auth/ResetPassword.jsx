@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import "../../styles/customer-login.css";
+import { authApi, getErrorMessage } from "../../services/api";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -39,35 +40,19 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/reset-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            token,
-            newPassword: password,
-            confirmPassword,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        setError(data.message || "Unable to reset password.");
-        return;
-      }
+      await authApi.resetPassword({
+        token,
+        newPassword: password,
+        confirmPassword,
+      });
 
       setMessage("Password reset successfully! Redirecting to login...");
 
       setTimeout(() => {
         navigate("/customer/login");
       }, 1500);
-    } catch {
-      setError("Unable to connect to the server. Please try again.");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
     } finally {
       setLoading(false);
     }

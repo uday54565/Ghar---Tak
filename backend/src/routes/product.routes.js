@@ -9,6 +9,7 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  getMyProducts,
   getProducts
 } = require("../controllers/product.controller");
 
@@ -42,6 +43,7 @@ router.delete(
 );
 
 router.get("/", getProducts);
+router.get("/mine", protect, authorize("shop_owner"), getMyProducts);
 
 
 module.exports = router;

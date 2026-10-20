@@ -2,16 +2,20 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../../styles/customer-login.css";
+import { useAuth } from "../../context/useAuth";
+import { getErrorMessage } from "../../services/api";
 
 export default function CustomerLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
@@ -20,8 +24,15 @@ export default function CustomerLogin() {
       return;
     }
 
-    // Demo login only; backend authentication is not connected yet.
-    navigate("/customer/dashboard");
+    setLoading(true);
+    try {
+      await login({ emailOrPhone: email.trim(), password }, "user");
+      navigate("/customer/dashboard");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -93,11 +104,11 @@ export default function CustomerLogin() {
               onSubmit={handleSubmit}
             >
               <div className="customer-input-group">
-                <label htmlFor="customer-email">Email address</label>
+                <label htmlFor="customer-email">Email address or phone</label>
                 <input
                   id="customer-email"
-                  type="email"
-                  placeholder="you@example.com"
+                  type="text"
+                  placeholder="you@example.com or 9876543210"
                   value={email}
                   onChange={(event) => {
                     setEmail(event.target.value);
@@ -158,7 +169,7 @@ export default function CustomerLogin() {
                 type="submit"
                 className="customer-login-button"
               >
-                Login to your account <span>→</span>
+                {loading ? "Signing in..." : "Login to your account"} <span>→</span>
               </button>
             </form>
 
@@ -174,7 +185,7 @@ export default function CustomerLogin() {
             </Link>
 
             <p className="customer-login-terms">
-              Demo customer sign-in only. No credentials are sent or verified.
+              Your account details are securely verified.
             </p>
           </div>
         </section>

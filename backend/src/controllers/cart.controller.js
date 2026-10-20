@@ -1,6 +1,7 @@
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const Shop = require("../models/Shop");
+const Category = require("../models/Category");
 
 const getProductAvailability = (product) => {
   if (!product) return false;
@@ -19,6 +20,7 @@ const calculateTotals = (cart) => {
   }, 0);
 
   cart.subtotal = subtotal;
+  cart.deliveryFee = subtotal === 0 || subtotal >= 499 ? 0 : 25;
 
   cart.totalPrice =
     subtotal + cart.deliveryFee - cart.discount;
@@ -57,7 +59,7 @@ const addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
 
-    if (!productId || quantity < 1) {
+    if (!productId || !Number.isInteger(Number(quantity)) || Number(quantity) < 1) {
       return res.status(400).json({
         success: false,
         message: "Product and valid quantity are required",
@@ -78,6 +80,17 @@ const addToCart = async (req, res) => {
         success: false,
         message: "Product is currently unavailable",
       });
+    }
+
+    if (
+      product.category &&
+      (await Category.exists({
+        shop: product.shop,
+        name: { $regex: `^${product.category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" },
+        isActive: false,
+      }))
+    ) {
+      return res.status(400).json({ success: false, message: "Product category is currently unavailable" });
     }
 
     const shop = await Shop.findById(product.shop);
@@ -101,7 +114,7 @@ const addToCart = async (req, res) => {
         items: [
           {
             product: product._id,
-            quantity,
+            quantity: Number(quantity),
             price: product.price,
           },
         ],
@@ -122,12 +135,12 @@ const addToCart = async (req, res) => {
       );
 
       if (existingItem) {
-        existingItem.quantity += quantity;
+        existingItem.quantity += Number(quantity);
         existingItem.price = product.price;
       } else {
         cart.items.push({
           product: product._id,
-          quantity,
+          quantity: Number(quantity),
           price: product.price,
         });
       }
@@ -157,7 +170,7 @@ const updateCartItem = async (req, res) => {
     const { productId } = req.params;
     const { quantity } = req.body;
 
-    if (!quantity || quantity < 1) {
+    if (!Number.isInteger(Number(quantity)) || Number(quantity) < 1) {
       return res.status(400).json({
         success: false,
         message: "Quantity must be at least 1",
@@ -196,7 +209,18 @@ const updateCartItem = async (req, res) => {
       });
     }
 
-    item.quantity = quantity;
+    if (
+      product.category &&
+      (await Category.exists({
+        shop: product.shop,
+        name: { $regex: `^${product.category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" },
+        isActive: false,
+      }))
+    ) {
+      return res.status(400).json({ success: false, message: "Product category is currently unavailable" });
+    }
+
+    item.quantity = Number(quantity);
     item.price = product.price;
 
     calculateTotals(cart);

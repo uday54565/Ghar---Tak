@@ -1,14 +1,37 @@
 const Product = require("../models/Product");
 const Shop = require("../models/Shop");
+const Category = require("../models/Category");
+const Cart = require("../models/Cart");
+
+const removeProductFromCarts = async (productId) => {
+  const carts = await Cart.find({ "items.product": productId });
+  for (const cart of carts) {
+    cart.items = cart.items.filter(
+      (item) => item.product.toString() !== productId.toString()
+    );
+    if (cart.items.length === 0) {
+      await Cart.deleteOne({ _id: cart._id });
+      continue;
+    }
+
+    cart.subtotal = cart.items.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
+    cart.deliveryFee = cart.subtotal === 0 || cart.subtotal >= 499 ? 0 : 25;
+    cart.totalPrice = cart.subtotal + cart.deliveryFee - cart.discount;
+    await cart.save();
+  }
+};
 
 const createProduct = async (req, res) => {
 
     try {
 
-        const { name, description, price, category, image } = req.body;
+        const { name, description, price, category, image, isAvailable } = req.body;
 
 
-            if (!name || price === undefined) {
+            if (!name?.trim() || !Number.isFinite(Number(price)) || Number(price) < 0) {
                 return res.status(400).json({
                     success: false,
                     message: "Product name and price are required",
@@ -30,11 +53,12 @@ const createProduct = async (req, res) => {
     const product  = await Product.create({
 
         shop: shop._id,
-        name,
-        price,
+        name: name.trim(),
+        price: Number(price),
         description,
         image,
-        category
+        category,
+        isAvailable,
     });
 
     return res.status(201).json({
@@ -66,6 +90,16 @@ const createProduct = async (req, res) => {
     const { name, description, price, category, image, isAvailable } =
       req.body;
 
+    if (name !== undefined && (typeof name !== "string" || !name.trim())) {
+      return res.status(400).json({ success: false, message: "Product name cannot be empty" });
+    }
+    if (price !== undefined && (!Number.isFinite(Number(price)) || Number(price) < 0)) {
+      return res.status(400).json({ success: false, message: "Product price must be a non-negative number" });
+    }
+    if (isAvailable !== undefined && typeof isAvailable !== "boolean") {
+      return res.status(400).json({ success: false, message: "Product availability must be a boolean" });
+    }
+
     const shop = await Shop.findOne({
       owner: req.user._id,
     });
@@ -89,7 +123,7 @@ const createProduct = async (req, res) => {
       });
     }
 
-    product.name = name ?? product.name;
+    product.name = name?.trim() ?? product.name;
     product.description = description ?? product.description;
     product.price = price ?? product.price;
     product.category = category ?? product.category;
@@ -97,6 +131,9 @@ const createProduct = async (req, res) => {
     product.isAvailable = isAvailable ?? product.isAvailable;
 
     await product.save();
+    if (!product.isAvailable) {
+      await removeProductFromCarts(product._id);
+    }
 
     return res.status(200).json({
       success: true,
@@ -152,6 +189,7 @@ const createProduct = async (req, res) => {
     await Product.deleteOne({
       _id: product._id,
     });
+    await removeProductFromCarts(product._id);
 
     return res.status(200).json({
       success: true,
@@ -164,12 +202,25 @@ const createProduct = async (req, res) => {
 
 
                 success: false,
-                message: "Server error while creating product",
                 message: error.message
             })
 
         }
     }
+
+const getMyProducts = async (req, res) => {
+  try {
+    const shop = await Shop.findOne({ owner: req.user._id });
+    if (!shop) {
+      return res.status(404).json({ success: false, message: "Shop not found" });
+    }
+    const products = await Product.find({ shop: shop._id }).sort({ createdAt: -1 });
+    return res.status(200).json({ success: true, products });
+  } catch (error) {
+    console.error("Get owner products error:", error);
+    return res.status(500).json({ success: false, message: "Unable to load products" });
+  }
+};
 
 const getProducts = async (req, res) => {
   try {
@@ -286,10 +337,22 @@ const getProducts = async (req, res) => {
       .populate("shop", "shopName address category isOpen")
       .sort(sortOptions[sort]);
 
+    const openShops = products.filter((product) => product.shop?.isOpen);
+    const categories = await Category.find().select("shop name isActive");
+    const productsWithActiveCategories = openShops.filter((product) => {
+      if (!product.category) return true;
+      const productCategory = categories.find(
+        (item) =>
+          item.shop.toString() === product.shop._id.toString() &&
+          item.name.toLowerCase() === product.category.toLowerCase()
+      );
+      return !productCategory || productCategory.isActive;
+    });
+
     return res.status(200).json({
       success: true,
-      count: products.length,
-      products,
+      count: productsWithActiveCategories.length,
+      products: productsWithActiveCategories,
     });
   } catch (error) {
     console.error("Get products error:", error);
@@ -305,5 +368,6 @@ const getProducts = async (req, res) => {
   createProduct,
   updateProduct,
   deleteProduct,
+  getMyProducts,
   getProducts,
 };
