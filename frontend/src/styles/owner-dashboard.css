@@ -1413,6 +1413,12 @@
   font-weight: 800;
 }
 
+.product-card-image > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .product-availability {
   position: absolute;
   top: 12px;
