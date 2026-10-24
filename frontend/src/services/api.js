@@ -60,6 +60,13 @@ export const userApi = {
 export const productApi = {
   list: (params) => api.get("/products", { params }),
   mine: () => api.get("/products/mine"),
+  uploadImage: (image) => {
+    const formData = new FormData();
+    formData.append("image", image);
+    return api.post("/products/upload-image", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
   create: (details) => api.post("/products", details),
   update: (id, details) => api.patch(`/products/${id}`, details),
   remove: (id) => api.delete(`/products/${id}`),

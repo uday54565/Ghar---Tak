@@ -19,6 +19,7 @@ router.post("/register", registerLimiter, register);
 
 router.post("/login", loginLimiter, login);
 
+
 router.post("/verify-email-otp", verifyEmailOtp);
 router.post("/resend-email-otp", otpSendLimiter, resendEmailOtp);
 router.post("/forgot-password", otpSendLimiter, forgotPassworrd);

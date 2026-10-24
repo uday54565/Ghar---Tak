@@ -2,6 +2,56 @@ const Product = require("../models/Product");
 const Shop = require("../models/Shop");
 const Category = require("../models/Category");
 const Cart = require("../models/Cart");
+const cloudinary = require("cloudinary").v2;
+
+const uploadProductImage = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: "A product image is required",
+    });
+  }
+
+  const cloudinaryConfig = {
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  };
+  if (Object.values(cloudinaryConfig).some((value) => !value)) {
+    return res.status(500).json({
+      success: false,
+      message: "Image upload is not configured",
+    });
+  }
+
+  cloudinary.config(cloudinaryConfig);
+
+  try {
+    const imageUrl = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "ghartak/products", resource_type: "image" },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else if (!result?.secure_url) {
+            reject(new Error("Cloudinary did not return an image URL"));
+          } else {
+            resolve(result.secure_url);
+          }
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    return res.status(201).json({ success: true, imageUrl });
+  } catch (error) {
+    console.error("Product image upload error:", error);
+    return res.status(502).json({
+      success: false,
+      message: "Unable to upload product image",
+    });
+  }
+};
 
 const removeProductFromCarts = async (productId) => {
   const carts = await Cart.find({ "items.product": productId });
@@ -364,7 +414,8 @@ const getProducts = async (req, res) => {
   }
 };
 
-   module.exports = {
+module.exports = {
+  uploadProductImage,
   createProduct,
   updateProduct,
   deleteProduct,

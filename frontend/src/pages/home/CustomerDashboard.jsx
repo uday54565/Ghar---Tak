@@ -779,7 +779,11 @@ export default function CustomerDashboard() {
                   <article className="customer-product-card" key={product.id}>
                     <div className="customer-product-image">
                       {product.badge && <span className="customer-product-badge">{product.badge}</span>}
-                      <span>{product.emoji}</span>
+                      {product.image ? (
+                        <img src={product.image} alt={product.name} />
+                      ) : (
+                        <span>{product.emoji}</span>
+                      )}
                       <button
                         className="customer-favourite customer-favourite-active"
                         aria-label={`Remove ${product.name} from wishlist`}
@@ -1140,7 +1144,11 @@ export default function CustomerDashboard() {
                             {product.badge}
                           </span>
                         )}
-                        <span>{product.emoji}</span>
+                        {product.image ? (
+                          <img src={product.image} alt={product.name} />
+                        ) : (
+                          <span>{product.emoji}</span>
+                        )}
                         <button
                           className={`customer-favourite ${wishlist.includes(product.id) ? "customer-favourite-active" : ""}`}
                           aria-label={wishlist.includes(product.id) ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`}

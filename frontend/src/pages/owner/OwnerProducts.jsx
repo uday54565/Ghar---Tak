@@ -24,6 +24,7 @@ function OwnerProducts() {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [imageFile, setImageFile] = useState(null);
 
   const loadProducts = async () => {
     try {
@@ -78,6 +79,7 @@ const unavailableProducts = totalProducts - availableProducts;
   const openAddModal = () => {
     setEditingProduct(null);
     setForm(emptyForm);
+    setImageFile(null);
     setShowModal(true);
   };
 
@@ -89,6 +91,7 @@ const unavailableProducts = totalProducts - availableProducts;
       price: product.price,
       available: product.available,
     });
+    setImageFile(null);
     setShowModal(true);
   };
 
@@ -96,6 +99,7 @@ const unavailableProducts = totalProducts - availableProducts;
     setShowModal(false);
     setEditingProduct(null);
     setForm(emptyForm);
+    setImageFile(null);
   };
 
   const handleInputChange = (e) => {
@@ -123,6 +127,10 @@ const unavailableProducts = totalProducts - availableProducts;
         price: Number(form.price),
         isAvailable: form.available,
       };
+      if (imageFile) {
+        const imageResponse = await productApi.uploadImage(imageFile);
+        details.image = imageResponse.data.imageUrl;
+      }
       if (editingProduct) {
         await productApi.update(editingProduct.id, details);
       } else {
@@ -278,9 +286,13 @@ const unavailableProducts = totalProducts - availableProducts;
                     key={product.id}
                   >
                     <div className="product-card-image">
-                      <span>
-                        {product.name.charAt(0).toUpperCase()}
-                      </span>
+                      {product.image ? (
+                        <img src={product.image} alt={product.name} />
+                      ) : (
+                        <span>
+                          {product.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
 
                       <span
                         className={`product-availability ${
@@ -414,6 +426,20 @@ const unavailableProducts = totalProducts - availableProducts;
                   value={form.name}
                   onChange={handleInputChange}
                   required
+                />
+              </div>
+
+              <div className="product-form-group">
+                <label htmlFor="productImage">
+                  Product photo
+                </label>
+                <input
+                  id="productImage"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={(e) =>
+                    setImageFile(e.target.files?.[0] || null)
+                  }
                 />
               </div>
 
