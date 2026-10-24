@@ -350,7 +350,7 @@ const login = async (req, res) => {
       message: "Server error during login",
     });
   }
-};
+};~
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 

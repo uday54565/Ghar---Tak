@@ -1,22 +1,84 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import apiRequest from "../../services/api";
 import "./ShopOwnerAuth.css";
 
 function ShopOwnerLogin() {
   const navigate = useNavigate();
+
   const [role, setRole] = useState("user");
+  const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
- const handleSubmit = (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
 
-  if (role === "shop_owner") {
-    navigate("/owner/dashboard");
-    return;
-  }
+    if (loading) return;
 
-  navigate("/customer/dashboard");
-};
+    setLoading(true);
+
+    try {
+      const data = await apiRequest("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({
+          emailOrPhone: emailOrPhone.trim(),
+          password,
+        }),
+      });
+
+      if (!data.token || !data.user) {
+        throw new Error("Invalid login response from server.");
+      }
+
+      if (data.user.role !== role) {
+        throw new Error(
+          `This account is registered as ${
+            data.user.role === "shop_owner"
+              ? "Shop Owner"
+              : "Customer"
+          }. Please select the correct role.`
+        );
+      }
+
+      // Save authentication token and logged-in user
+      localStorage.setItem("token", data.token);
+      localStorage.setItem(
+        "ghartak-user",
+        JSON.stringify(data.user)
+      );
+
+      // Redirect according to account role
+      if (data.user.role === "shop_owner") {
+        navigate("/owner/dashboard", { replace: true });
+      } else {
+        navigate("/customer/dashboard", { replace: true });
+      }
+    } catch (err) {
+      setError(err.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+    const data = await apiRequest("/auth/login", {
+  method: "POST",
+  body: JSON.stringify({
+    emailOrPhone: emailOrPhone.trim(),
+    password,
+  }),
+});
+
+console.log("Login response:", {
+  success: data.success,
+  hasToken: Boolean(data.token),
+  user: data.user,
+});
+  };
+
+  
 
   return (
     <main className="auth-page">
@@ -68,10 +130,12 @@ function ShopOwnerLogin() {
               <button
                 type="button"
                 className={`role-card ${role === "user" ? "active" : ""}`}
-                onClick={() => setRole("user")}
+                onClick={() => {
+                  setRole("user");
+                  setError("");
+                }}
               >
                 <span className="role-icon">👤</span>
-
                 <span className="role-info">
                   <strong>Customer</strong>
                   <small>Order from local shops</small>
@@ -83,10 +147,12 @@ function ShopOwnerLogin() {
                 className={`role-card ${
                   role === "shop_owner" ? "active" : ""
                 }`}
-                onClick={() => setRole("shop_owner")}
+                onClick={() => {
+                  setRole("shop_owner");
+                  setError("");
+                }}
               >
                 <span className="role-icon">🏪</span>
-
                 <span className="role-info">
                   <strong>Shop Owner</strong>
                   <small>Manage your shop</small>
@@ -96,7 +162,6 @@ function ShopOwnerLogin() {
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
-            {/* Email / Phone */}
             <div className="input-group">
               <label htmlFor="loginEmail">
                 Email or Phone Number
@@ -107,12 +172,15 @@ function ShopOwnerLogin() {
                   id="loginEmail"
                   type="text"
                   placeholder="Enter email or phone number"
+                  value={emailOrPhone}
+                  onChange={(e) => setEmailOrPhone(e.target.value)}
+                  autoComplete="username"
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div className="input-group">
               <div className="password-label-row">
                 <label htmlFor="loginPassword">Password</label>
@@ -127,13 +195,17 @@ function ShopOwnerLogin() {
                   id="loginPassword"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
                   required
+                  disabled={loading}
                 />
 
                 <button
                   type="button"
                   className="password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={
                     showPassword ? "Hide password" : "Show password"
                   }
@@ -143,14 +215,24 @@ function ShopOwnerLogin() {
               </div>
             </div>
 
-            <button type="submit" className="auth-submit">
-              Login
-              <span>→</span>
+            {error && (
+              <p className="auth-error" role="alert">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={loading}
+            >
+              {loading ? "Logging in..." : "Login"}
+              {!loading && <span>→</span>}
             </button>
           </form>
 
           <div className="auth-switch">
-            Don't have an account?
+            Don't have an account?{" "}
             <Link to="/register">Create account</Link>
           </div>
 

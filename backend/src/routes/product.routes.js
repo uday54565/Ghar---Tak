@@ -2,7 +2,7 @@ const express = require("express");
 
 const { protect, authorize } = require("../middleware/auth.middleware");
 
-const upload = require("../middleware/upload.middleware");
+const upload = require("../middleware/upload.middleware.js");
 
 const {
   createProduct,
