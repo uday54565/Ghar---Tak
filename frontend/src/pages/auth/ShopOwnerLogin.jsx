@@ -1,26 +1,44 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./ShopOwnerAuth.css";
 import { useAuth } from "../../context/useAuth";
 import { getErrorMessage } from "../../services/api";
+import "./ShopOwnerAuth.css";
 
 function ShopOwnerLogin() {
   const navigate = useNavigate();
   const { login } = useAuth();
+
   const [role, setRole] = useState("user");
-  const [showPassword, setShowPassword] = useState(false);
   const [emailOrPhone, setEmailOrPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+
+    if (loading) return;
+
     setLoading(true);
+
     try {
-      await login({ emailOrPhone: emailOrPhone.trim(), password }, role);
-      navigate(role === "shop_owner" ? "/owner/dashboard" : "/customer/dashboard");
+      await login(
+        {
+          emailOrPhone: emailOrPhone.trim(),
+          password,
+        },
+        role
+      );
+
+      navigate(
+        role === "shop_owner"
+          ? "/owner/dashboard"
+          : "/customer/dashboard",
+        { replace: true }
+      );
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -39,7 +57,9 @@ function ShopOwnerLogin() {
 
         <div className="showcase-content">
           <span className="showcase-label">
-            {role === "user" ? "FOR CUSTOMERS" : "FOR SHOP OWNERS"}
+            {role === "user"
+              ? "FOR CUSTOMERS"
+              : "FOR SHOP OWNERS"}
           </span>
 
           <h1>
@@ -60,13 +80,18 @@ function ShopOwnerLogin() {
       <section className="auth-form-section">
         <div className="auth-form-container">
           <div className="auth-heading">
-            <span className="mobile-auth-brand">GHAR TAK</span>
+            <span className="mobile-auth-brand">
+              GHAR TAK
+            </span>
 
             <h2>Welcome back</h2>
 
             <p>
               Sign in to your{" "}
-              {role === "user" ? "GHAR TAK account" : "shop account"}.
+              {role === "user"
+                ? "GHAR TAK account"
+                : "shop account"}
+              .
             </p>
           </div>
 
@@ -77,8 +102,14 @@ function ShopOwnerLogin() {
             <div className="role-options">
               <button
                 type="button"
-                className={`role-card ${role === "user" ? "active" : ""}`}
-                onClick={() => setRole("user")}
+                className={`role-card ${
+                  role === "user" ? "active" : ""
+                }`}
+                onClick={() => {
+                  setRole("user");
+                  setError("");
+                }}
+                disabled={loading}
               >
                 <span className="role-icon">👤</span>
 
@@ -93,7 +124,11 @@ function ShopOwnerLogin() {
                 className={`role-card ${
                   role === "shop_owner" ? "active" : ""
                 }`}
-                onClick={() => setRole("shop_owner")}
+                onClick={() => {
+                  setRole("shop_owner");
+                  setError("");
+                }}
+                disabled={loading}
               >
                 <span className="role-icon">🏪</span>
 
@@ -105,8 +140,10 @@ function ShopOwnerLogin() {
             </div>
           </div>
 
-          <form className="auth-form" onSubmit={handleSubmit}>
-            {/* Email / Phone */}
+          <form
+            className="auth-form"
+            onSubmit={handleSubmit}
+          >
             <div className="input-group">
               <label htmlFor="loginEmail">
                 Email or Phone Number
@@ -118,16 +155,21 @@ function ShopOwnerLogin() {
                   type="text"
                   placeholder="Enter email or phone number"
                   value={emailOrPhone}
-                  onChange={(event) => setEmailOrPhone(event.target.value)}
+                  onChange={(event) =>
+                    setEmailOrPhone(event.target.value)
+                  }
+                  autoComplete="username"
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
 
-            {/* Password */}
             <div className="input-group">
               <div className="password-label-row">
-                <label htmlFor="loginPassword">Password</label>
+                <label htmlFor="loginPassword">
+                  Password
+                </label>
 
                 <Link to="/forgot-password">
                   Forgot password?
@@ -140,34 +182,53 @@ function ShopOwnerLogin() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  autoComplete="current-password"
                   required
+                  disabled={loading}
                 />
 
                 <button
                   type="button"
                   className="password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={
-                    showPassword ? "Hide password" : "Show password"
+                  onClick={() =>
+                    setShowPassword((previous) => !previous)
                   }
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  disabled={loading}
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
             </div>
 
-            {error && <p className="register-error" role="alert">{error}</p>}
+            {error && (
+              <p className="auth-error" role="alert">
+                {error}
+              </p>
+            )}
 
-            <button type="submit" className="auth-submit" disabled={loading}>
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={loading}
+            >
               {loading ? "Signing in..." : "Login"}
-              <span>→</span>
+              {!loading && <span>→</span>}
             </button>
           </form>
 
           <div className="auth-switch">
-            Don't have an account?
-            <Link to="/register">Create account</Link>
+            Don't have an account?{" "}
+            <Link to="/register">
+              Create account
+            </Link>
           </div>
 
           <Link to="/" className="back-home">
