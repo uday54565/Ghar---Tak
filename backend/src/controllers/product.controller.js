@@ -25,6 +25,8 @@ const removeProductFromCarts = async (productId) => {
 };
 
 const createProduct = async (req, res) => {
+  try {
+    const { name, description, price, category, image } = req.body;
 
     try {
 
@@ -39,12 +41,12 @@ const createProduct = async (req, res) => {
             }
         
 
-            const shop = await Shop.findOne({
+    const shop = await Shop.findOne({
       owner: req.user._id,
     });
 
-    if(!shop){
-       return res.status(404).json({
+    if (!shop) {
+      return res.status(404).json({
         success: false,
         message: "Shop not found",
       });
@@ -62,33 +64,23 @@ const createProduct = async (req, res) => {
     });
 
     return res.status(201).json({
-
-        success : true,
-        message : " product is created",
-        product,
+      success: true,
+      message: " product is created",
+      product,
     });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
-        }
-    catch (error) {
+const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-            return res.status(500).json({
-
-
-                success: false,
-                message: error.message
-            })
-
-        }
-    }
-
-
-    const  updateProduct = async (req,res) => {
-
-        try {
-              const { id } = req.params;
-
-    const { name, description, price, category, image, isAvailable } =
-      req.body;
+    const { name, description, price, category, image, isAvailable } = req.body;
 
     if (name !== undefined && (typeof name !== "string" || !name.trim())) {
       return res.status(400).json({ success: false, message: "Product name cannot be empty" });
@@ -140,28 +132,17 @@ const createProduct = async (req, res) => {
       message: "Product updated successfully",
       product,
     });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
-        }
-        catch(error) {
-            return res.status(500).json({
-
-
-                success: false,
-                message: error.message
-            })
-
-        }
-    }
-
-
-
-     const  deleteProduct = async (req,res) => {
-
-
-
-        try {
-
-            const { id } = req.params;
+const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
 
     const shop = await Shop.findOne({
       owner: req.user._id,
@@ -195,18 +176,44 @@ const createProduct = async (req, res) => {
       success: true,
       message: "Product deleted successfully",
     });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Server error while creating product",
+      message: error.message,
+    });
+  }
+};
 
-        }
-        catch(error) {
-            return res.status(500).json({
+const getOwnerProducts = async (req, res) => {
+  try {
+    const shop = await Shop.findOne({ owner: req.user._id });
 
-
-                success: false,
-                message: error.message
-            })
-
-        }
+    if (!shop) {
+      return res.status(404).json({
+        success: false,
+        message: "Shop not found",
+      });
     }
+
+    const products = await Product.find({ shop: shop._id }).sort({
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: products.length,
+      products,
+    });
+  } catch (error) {
+    console.error("Get owner products error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching your products",
+    });
+  }
+};
 
 const getMyProducts = async (req, res) => {
   try {
@@ -224,50 +231,31 @@ const getMyProducts = async (req, res) => {
 
 const getProducts = async (req, res) => {
   try {
-    const {
-      search,
-      category,
-      minPrice,
-      maxPrice,
-      sort = "newest",
-    } = req.query;
+    const { search, category, minPrice, maxPrice, sort = "newest" } = req.query;
 
     const filters = [];
 
     // 1. Available products only (supports existing legacy typo)
     filters.push({
-      $or: [
-        { isAvailable: true },
-        { isAvalable: true },
-      ],
+      $or: [{ isAvailable: true }, { isAvalable: true }],
     });
 
     // Escape special regex characters in user input
-    const escapeRegex = (value) =>
-      value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
     // 2. Search by product name or description
     if (search && search.trim()) {
-      const keyword = new RegExp(
-        escapeRegex(search.trim()),
-        "i"
-      );
+      const keyword = new RegExp(escapeRegex(search.trim()), "i");
 
       filters.push({
-        $or: [
-          { name: keyword },
-          { description: keyword },
-        ],
+        $or: [{ name: keyword }, { description: keyword }],
       });
     }
 
     // 3. Filter by category
     if (category && category.trim()) {
       filters.push({
-        category: new RegExp(
-          `^${escapeRegex(category.trim())}$`,
-          "i"
-        ),
+        category: new RegExp(`^${escapeRegex(category.trim())}$`, "i"),
       });
     }
 
@@ -364,10 +352,11 @@ const getProducts = async (req, res) => {
   }
 };
 
-   module.exports = {
+module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
   getMyProducts,
   getProducts,
+  getOwnerProducts,
 };

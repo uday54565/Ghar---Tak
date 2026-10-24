@@ -48,10 +48,27 @@ const productSchema = new mongoose.Schema(
 
 
     },
-
-    {
-        timestamps: true
-    }
+    price: {
+      type: Number,
+      required: [true, "Product price is required"],
+      min: [0, "Price cannot be negative"],
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    category: {
+      type: String,
+      required: [true, "Product category is required"],
+      trim: true,
+    },
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Product", productSchema);
