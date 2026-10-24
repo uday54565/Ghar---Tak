@@ -1,155 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/useAuth";
+import {
+  cartApi,
+  getErrorMessage,
+  orderApi,
+  productApi,
+  shopApi,
+  userApi,
+} from "../../services/api";
 import "../../styles/customer-dashboard.css";
 
-const categories = [
-  { name: "All", icon: "✨" },
-  { name: "Grocery", icon: "🥬" },
-  { name: "Fruits", icon: "🍎" },
-  { name: "Dairy", icon: "🥛" },
-  { name: "Bakery", icon: "🥐" },
-  { name: "Snacks", icon: "🍿" },
-  { name: "Beverages", icon: "🥤" },
-  { name: "Personal Care", icon: "🧴" },
-];
-
-const products = [
-  {
-    id: 1,
-    name: "Fresh Tomatoes",
-    description: "Farm fresh · 500 g",
-    price: 30,
-    category: "Grocery",
-    emoji: "🍅",
-    shop: "Sharma General Store",
-    badge: "Fresh pick",
-  },
-  {
-    id: 2,
-    name: "Red Apples",
-    description: "Crisp apples · 4 pcs",
-    price: 120,
-    category: "Fruits",
-    emoji: "🍎",
-    shop: "Fresh Basket",
-    badge: "Popular",
-  },
-  {
-    id: 3,
-    name: "Fresh Milk",
-    description: "Full cream · 500 ml",
-    price: 35,
-    category: "Dairy",
-    emoji: "🥛",
-    shop: "Sharma General Store",
-    badge: "",
-  },
-  {
-    id: 4,
-    name: "Brown Bread",
-    description: "Whole wheat · 400 g",
-    price: 45,
-    category: "Bakery",
-    emoji: "🍞",
-    shop: "Daily Bake House",
-    badge: "",
-  },
-  {
-    id: 5,
-    name: "Potato Chips",
-    description: "Classic salted · 1 pack",
-    price: 20,
-    category: "Snacks",
-    emoji: "🥔",
-    shop: "Sharma General Store",
-    badge: "Bestseller",
-  },
-  {
-    id: 6,
-    name: "Orange Juice",
-    description: "Refreshing · 1 bottle",
-    price: 80,
-    category: "Beverages",
-    emoji: "🧃",
-    shop: "Fresh Basket",
-    badge: "",
-  },
-  {
-    id: 7,
-    name: "Fresh Bananas",
-    description: "Naturally sweet · 6 pcs",
-    price: 40,
-    category: "Fruits",
-    emoji: "🍌",
-    shop: "Fresh Basket",
-    badge: "",
-  },
-  {
-    id: 8,
-    name: "Butter Cookies",
-    description: "Crunchy treats · 1 pack",
-    price: 55,
-    category: "Bakery",
-    emoji: "🍪",
-    shop: "Daily Bake House",
-    badge: "Popular",
-  },
-];
-
-const shops = [
-  {
-    id: 1,
-    name: "Sharma General Store",
-    category: "Groceries & daily essentials",
-    rating: "4.8",
-    time: "15–25 min",
-    emoji: "🏪",
-  },
-  {
-    id: 2,
-    name: "Fresh Basket",
-    category: "Fruits & vegetables",
-    rating: "4.7",
-    time: "20–30 min",
-    emoji: "🥦",
-  },
-  {
-    id: 3,
-    name: "Daily Bake House",
-    category: "Bakery & fresh bread",
-    rating: "4.9",
-    time: "20–35 min",
-    emoji: "🥐",
-  },
-];
-
-const demoOrders = [
-  {
-    id: "GT-24018",
-    placedAt: "Today, 11:20 AM",
-    items: [
-      { name: "Fresh Tomatoes", quantity: 2 },
-      { name: "Fresh Milk", quantity: 1 },
-    ],
-    total: 120,
-    status: "Out for delivery",
-    eta: "Arriving in 8–12 min",
-    payment: "Cash on delivery",
-  },
-];
-
-const demoProfile = {
-  name: "Rahul Kumar",
-  email: "rahul@example.com",
-  phone: "",
+const categoryIcons = {
+  Grocery: "🥬",
+  Fruits: "🍎",
+  Dairy: "🥛",
+  Bakery: "🥐",
+  Snacks: "🍿",
+  Beverages: "🥤",
 };
-
-const demoAddresses = [
-  {
-    id: "demo-home",
-    label: "Home",
-    details: "12 Green Park Road, Sector 4, New Delhi, 110016",
-  },
-];
 
 function readStoredValue(key, fallback, isValid) {
   try {
@@ -160,106 +29,37 @@ function readStoredValue(key, fallback, isValid) {
   }
 }
 
-function createDemoOrder({ cartProducts, cart, total, paymentMethod, address }) {
-  return {
-    id: `GT-${String(Date.now()).slice(-6)}`,
-    placedAt: new Date().toLocaleString("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }),
-    items: cartProducts.map((product) => ({
-      name: product.name,
-      quantity: cart[product.id],
-    })),
-    total,
-    status: "Confirmed",
-    eta: "Preparing your order",
-    payment: paymentMethod,
-    address,
-  };
-}
-
 export default function CustomerDashboard() {
+  const navigate = useNavigate();
+  const { user, logout, updateUser } = useAuth();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [cart, setCart] = useState(() =>
-    readStoredValue(
-      "ghartak-customer-cart",
-      {},
-      (value) =>
-        value !== null &&
-        typeof value === "object" &&
-        !Array.isArray(value) &&
-        Object.values(value).every(
-          (quantity) => Number.isInteger(quantity) && quantity > 0
-        )
-    )
-  );
+  const [products, setProducts] = useState([]);
+  const [shops, setShops] = useState([]);
+  const [cart, setCart] = useState({});
   const [wishlist, setWishlist] = useState(() =>
     readStoredValue(
       "ghartak-customer-wishlist",
       [],
-      (value) =>
-        Array.isArray(value) &&
-        value.every((id) => products.some((product) => product.id === id))
+      Array.isArray
     )
   );
-  const [orders, setOrders] = useState(() =>
-    readStoredValue(
-      "ghartak-customer-orders",
-      demoOrders,
-      (value) =>
-        Array.isArray(value) &&
-        value.every(
-          (order) =>
-            typeof order.id === "string" &&
-            typeof order.status === "string" &&
-            typeof order.total === "number" &&
-            Array.isArray(order.items) &&
-            order.items.every(
-              (item) =>
-                typeof item.name === "string" &&
-                Number.isInteger(item.quantity) &&
-                item.quantity > 0
-            )
-        )
-    )
-  );
-  const [profile, setProfile] = useState(() =>
-    readStoredValue(
-      "ghartak-customer-profile",
-      demoProfile,
-      (value) =>
-        value !== null &&
-        typeof value === "object" &&
-        typeof value.name === "string" &&
-        typeof value.email === "string" &&
-        typeof value.phone === "string"
-    )
-  );
-  const [addresses, setAddresses] = useState(() =>
-    readStoredValue(
-      "ghartak-customer-addresses",
-      demoAddresses,
-      (value) =>
-        Array.isArray(value) &&
-        value.every(
-          (address) =>
-            typeof address.id === "string" &&
-            typeof address.label === "string" &&
-            typeof address.details === "string"
-        )
-    )
-  );
+  const [orders, setOrders] = useState([]);
+  const [profile, setProfile] = useState({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+  });
+  const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(() =>
     readStoredValue(
       "ghartak-customer-selected-address",
-      addresses[0]?.id || "",
-      (value) =>
-        typeof value === "string" &&
-        (value === "" || addresses.some((address) => address.id === value))
+      "",
+      (value) => typeof value === "string"
     )
   );
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [activeTab, setActiveTab] = useState("Home");
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -267,54 +67,133 @@ export default function CustomerDashboard() {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressLabel, setAddressLabel] = useState("");
   const [addressDetails, setAddressDetails] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Cash on delivery");
   const [profileForm, setProfileForm] = useState(profile);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    localStorage.setItem("ghartak-customer-cart", JSON.stringify(cart));
-  }, [cart]);
-
-  useEffect(() => {
-    localStorage.setItem("ghartak-customer-wishlist", JSON.stringify(wishlist));
-  }, [wishlist]);
-
-  useEffect(() => {
-    localStorage.setItem("ghartak-customer-orders", JSON.stringify(orders));
-  }, [orders]);
-
-  useEffect(() => {
-    localStorage.setItem("ghartak-customer-profile", JSON.stringify(profile));
-  }, [profile]);
-
-  useEffect(() => {
-    localStorage.setItem("ghartak-customer-addresses", JSON.stringify(addresses));
-  }, [addresses]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      "ghartak-customer-selected-address",
-      JSON.stringify(selectedAddressId)
-    );
+    localStorage.setItem("ghartak-customer-selected-address", selectedAddressId);
   }, [selectedAddressId]);
 
+  const mapCart = (serverCart) =>
+    Object.fromEntries(
+      (serverCart?.items || []).map((item) => [
+        typeof item.product === "object" ? item.product._id : item.product,
+        item.quantity,
+      ])
+    );
+
+  const mapOrder = (order) => {
+    const labels = {
+      pending: "Confirmed",
+      accepted: "Confirmed",
+      preparing: "Preparing",
+      out_for_delivery: "Out for delivery",
+      delivered: "Delivered",
+      cancelled: "Cancelled",
+    };
+    return {
+      id: order._id,
+      placedAt: new Date(order.createdAt).toLocaleString("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }),
+      items: order.items.map(({ product, name, quantity }) => ({
+        product: typeof product === "object" ? product._id : product,
+        name,
+        quantity,
+      })),
+      total: order.totalPrice,
+      status: labels[order.orderStatus] || order.orderStatus,
+      eta: order.orderStatus === "delivered" ? "Order completed" : "Order in progress",
+      payment: "Cash on delivery",
+      address: order.deliveryAddress,
+    };
+  };
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      setLoading(true);
+      try {
+        const [productResult, shopResult, userResult, cartResult, orderResult] =
+          await Promise.all([
+            productApi.list(),
+            shopApi.list(),
+            userApi.profile(),
+            cartApi.get(),
+            orderApi.mine(),
+          ]);
+        setProducts(
+          productResult.data.products.map((product) => ({
+            ...product,
+            id: product._id,
+            description: product.description || product.category || "Available locally",
+            category: product.category || "Other",
+            emoji: "🛍️",
+            shop: product.shop?.shopName || "Local shop",
+            badge: "",
+          }))
+        );
+        setShops(
+          shopResult.data.shops.map((shop) => ({
+            ...shop,
+            id: shop._id,
+            name: shop.shopName,
+            category: shop.category || shop.description || "Local shop",
+            rating: "Local",
+            time: "Local delivery",
+            emoji: "🏪",
+          }))
+        );
+        const currentUser = userResult.data.user;
+        const nextProfile = {
+          name: currentUser.name,
+          email: currentUser.email,
+          phone: currentUser.phone,
+        };
+        setProfile(nextProfile);
+        setProfileForm(nextProfile);
+        setAddresses(
+          (currentUser.addresses || []).map((address) => ({
+            id: address._id,
+            label: address.label,
+            details: address.details,
+          }))
+        );
+        setWishlist((currentUser.wishlist || []).map((id) => String(id)));
+        setCart(mapCart(cartResult.data.cart));
+        setOrders(orderResult.data.orders.map(mapOrder));
+      } catch (requestError) {
+        setNotice(getErrorMessage(requestError));
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadDashboard();
+  }, []);
+
+  const categories = [
+    { name: "All", icon: "✨" },
+    ...Array.from(new Set(products.map((product) => product.category))).map((name) => ({
+      name,
+      icon: categoryIcons[name] || "🛒",
+    })),
+  ];
   const wishlistProducts = products.filter((product) => wishlist.includes(product.id));
   const selectedAddress = addresses.find(
     (address) => address.id === selectedAddressId
   ) || addresses[0];
 
-  function toggleWishlist(productId) {
-    const isSaved = wishlist.includes(productId);
-    setWishlist((current) =>
-      isSaved
-        ? current.filter((id) => id !== productId)
-        : [...current, productId]
-    );
-    setNotice(
-      isSaved
-        ? "Product removed from your wishlist."
-        : "Product saved to your wishlist."
-    );
+  async function toggleWishlist(productId) {
+    const nextWishlist = wishlist.includes(productId)
+      ? wishlist.filter((id) => id !== productId)
+      : [...wishlist, productId];
+    try {
+      await userApi.updateProfile({ wishlist: nextWishlist });
+      setWishlist(nextWishlist);
+      setNotice(wishlist.includes(productId) ? "Product removed from your wishlist." : "Product saved to your wishlist.");
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
+    }
   }
 
   const filteredProducts = useMemo(() => {
@@ -333,7 +212,7 @@ export default function CustomerDashboard() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [search, activeCategory]);
+  }, [products, search, activeCategory]);
 
   const cartCount = Object.values(cart).reduce(
     (total, quantity) => total + quantity,
@@ -352,23 +231,30 @@ export default function CustomerDashboard() {
   const deliveryFee = cartTotal >= 499 ? 0 : 25;
   const orderTotal = cartTotal + deliveryFee;
 
-  function updateCart(productId, change) {
-    setCart((currentCart) => {
-      const nextQuantity = (currentCart[productId] || 0) + change;
-      const nextCart = { ...currentCart };
+  async function updateCart(productId, change) {
+    const nextQuantity = (cart[productId] || 0) + change;
+    try {
+      const response =
+        nextQuantity <= 0
+          ? await cartApi.remove(productId)
+          : cart[productId]
+            ? await cartApi.update(productId, nextQuantity)
+            : await cartApi.add(productId, nextQuantity);
+      setCart(mapCart(response.data.cart));
+      setNotice(change > 0 ? "Product added to your cart." : "Cart quantity updated.");
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
+    }
+  }
 
-      if (nextQuantity <= 0) {
-        delete nextCart[productId];
-      } else {
-        nextCart[productId] = nextQuantity;
-      }
-
-      return nextCart;
-    });
-
-    setNotice(
-      change > 0 ? "Product added to your cart." : "Cart quantity updated."
-    );
+  async function clearCart() {
+    try {
+      await cartApi.clear();
+      setCart({});
+      setNotice("Your cart has been cleared.");
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
+    }
   }
 
   function handleNavigation(tab) {
@@ -395,7 +281,7 @@ export default function CustomerDashboard() {
     setNotice("");
   }
 
-  function saveAddress(event) {
+  async function saveAddress(event) {
     event.preventDefault();
     const details = addressDetails.trim();
     const label = addressLabel.trim();
@@ -405,24 +291,34 @@ export default function CustomerDashboard() {
       return;
     }
 
-    const address = {
-      id: `address-${Date.now()}`,
-      label,
-      details,
-    };
-    setAddresses((current) => [...current, address]);
-    setSelectedAddressId(address.id);
-    setAddressLabel("");
-    setAddressDetails("");
-    setShowAddressForm(false);
-    setNotice("Your delivery address has been saved.");
+    try {
+      const { data } = await userApi.updateProfile({
+        addresses: [...addresses, { label, details }].map(({ label: addressLabelValue, details: addressDetailsValue }) => ({
+          label: addressLabelValue,
+          details: addressDetailsValue,
+        })),
+      });
+      const updatedAddresses = data.user.addresses.map((address) => ({
+        id: address._id,
+        label: address.label,
+        details: address.details,
+      }));
+      setAddresses(updatedAddresses);
+      setSelectedAddressId(updatedAddresses.at(-1)?.id || "");
+      setAddressLabel("");
+      setAddressDetails("");
+      setShowAddressForm(false);
+      setNotice("Your delivery address has been saved.");
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
+    }
   }
 
-  function saveProfile(event) {
+  async function saveProfile(event) {
     event.preventDefault();
     const nextProfile = {
       name: profileForm.name.trim(),
-      email: profileForm.email.trim(),
+      email: profile.email,
       phone: profileForm.phone.trim(),
     };
 
@@ -431,12 +327,21 @@ export default function CustomerDashboard() {
       return;
     }
 
-    setProfile(nextProfile);
-    setProfileForm(nextProfile);
-    setNotice("Your profile details have been saved.");
+    try {
+      const { data } = await userApi.updateProfile({
+        name: nextProfile.name,
+        phone: nextProfile.phone,
+      });
+      setProfile({ name: data.user.name, email: data.user.email, phone: data.user.phone });
+      setProfileForm({ name: data.user.name, email: data.user.email, phone: data.user.phone });
+      updateUser(data.user);
+      setNotice("Your profile details have been saved.");
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
+    }
   }
 
-  function placeOrder(event) {
+  async function placeOrder(event) {
     event.preventDefault();
 
     if (!selectedAddress) {
@@ -445,31 +350,71 @@ export default function CustomerDashboard() {
       return;
     }
 
-    const order = createDemoOrder({
-      cartProducts,
-      cart,
-      total: orderTotal,
-      paymentMethod,
-      address: selectedAddress.details,
-    });
-
-    setOrders((current) => [order, ...current]);
-    setCart({});
-    setShowCheckout(false);
-    setShowCart(false);
-    setActiveTab("Orders");
-    setNotice(`Order ${order.id} placed successfully. This is a frontend demo order.`);
+    setBusy(true);
+    try {
+      const { data } = await orderApi.create(selectedAddress.details);
+      setOrders((current) => [mapOrder(data.order), ...current]);
+      setCart({});
+      setShowCheckout(false);
+      setShowCart(false);
+      setActiveTab("Orders");
+      setNotice(`Order ${data.order._id} placed successfully.`);
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function deleteAddress(addressId) {
+  async function deleteAddress(addressId) {
+    const selectedAddressBeforeUpdate = addresses.find(
+      (address) => address.id === selectedAddressId
+    );
     const remainingAddresses = addresses.filter(
       (address) => address.id !== addressId
     );
-    setAddresses(remainingAddresses);
-    if (selectedAddressId === addressId) {
-      setSelectedAddressId(remainingAddresses[0]?.id || "");
+    try {
+      const { data } = await userApi.updateProfile({
+        addresses: remainingAddresses.map(({ label, details }) => ({ label, details })),
+      });
+      const updatedAddresses = data.user.addresses.map((address) => ({
+        id: address._id,
+        label: address.label,
+        details: address.details,
+      }));
+      setAddresses(updatedAddresses);
+      const preferredAddress =
+        selectedAddressId === addressId
+          ? updatedAddresses[0]
+          : updatedAddresses.find(
+              (address) =>
+                address.label === selectedAddressBeforeUpdate?.label &&
+                address.details === selectedAddressBeforeUpdate?.details
+            );
+      setSelectedAddressId(preferredAddress?.id || updatedAddresses[0]?.id || "");
+      setNotice("Delivery address removed.");
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
     }
-    setNotice("Delivery address removed.");
+  }
+
+  async function repeatOrder(order) {
+    try {
+      for (const item of order.items) {
+        const product =
+          products.find((entry) => entry.id === item.product) ||
+          products.find((entry) => entry.name === item.name);
+        if (product) await cartApi.add(product.id, item.quantity);
+      }
+      const { data } = await cartApi.get();
+      setCart(mapCart(data.cart));
+      setShowCheckout(false);
+      setShowCart(true);
+      setActiveTab("Cart");
+      setNotice("Available items from this order were added to your cart.");
+    } catch (requestError) {
+      setNotice(getErrorMessage(requestError));
+    }
   }
 
   return (
@@ -510,6 +455,16 @@ export default function CustomerDashboard() {
           >
             <span>👤</span>
             <strong>{profile.name || "My Account"}</strong>
+          </button>
+          <button
+            type="button"
+            className="customer-account"
+            onClick={() => {
+              logout();
+              navigate("/customer/login");
+            }}
+          >
+            Sign out
           </button>
         </div>
       </header>
@@ -580,6 +535,7 @@ export default function CustomerDashboard() {
             </button>
           </div>
         )}
+        {loading && <p className="customer-notice" role="status">Loading your GHAR TAK account...</p>}
 
         {showCheckout ? (
           <section className="customer-section customer-checkout-section">
@@ -637,29 +593,10 @@ export default function CustomerDashboard() {
                     </div>
                   </div>
                   <div className="customer-payment-options">
-                    {["Cash on delivery", "UPI", "Credit or debit card"].map(
-                      (method) => (
-                        <label
-                          className="customer-payment-option"
-                          key={method}
-                        >
-                          <input
-                            type="radio"
-                            name="payment-method"
-                            value={method}
-                            checked={paymentMethod === method}
-                            onChange={() => setPaymentMethod(method)}
-                          />
-                          <span>{method}</span>
-                          {method === "Cash on delivery" && (
-                            <small>Pay when your order arrives</small>
-                          )}
-                          {method !== "Cash on delivery" && (
-                            <small>Demo option · payment is not processed</small>
-                          )}
-                        </label>
-                      )
-                    )}
+                    <div className="customer-payment-option">
+                      <strong>Cash on delivery</strong>
+                      <small>Pay when your order arrives</small>
+                    </div>
                   </div>
                 </section>
 
@@ -711,13 +648,13 @@ export default function CustomerDashboard() {
                   <button
                     type="submit"
                     className="customer-primary-button customer-full-button"
-                    disabled={cartProducts.length === 0}
+                    disabled={cartProducts.length === 0 || busy}
                   >
-                    Place demo order · ₹{orderTotal}
+                    {busy ? "Placing order..." : `Place order · ₹${orderTotal}`}
                   </button>
                 </form>
                 <p className="customer-demo-note">
-                  This is a frontend demo. No payment will be taken.
+                  Payment is collected in cash on delivery.
                 </p>
               </aside>
             </div>
@@ -735,6 +672,11 @@ export default function CustomerDashboard() {
               >
                 ← Continue shopping
               </button>
+              {cartProducts.length > 0 && (
+                <button className="customer-text-button" onClick={clearCart}>
+                  Clear cart
+                </button>
+              )}
             </div>
 
             {cartProducts.length === 0 ? (
@@ -946,38 +888,7 @@ export default function CustomerDashboard() {
                         <span>🚴 {order.eta || "Order completed"}</span>
                         <button
                           className="customer-text-button"
-                          onClick={() => {
-                            const repeatItems = Object.fromEntries(
-                              order.items
-                                .map((item) => {
-                                  const product = products.find(
-                                    (entry) => entry.name === item.name
-                                  );
-                                  return product
-                                    ? [product.id, item.quantity]
-                                    : null;
-                                })
-                                .filter(Boolean)
-                            );
-                            setCart((current) =>
-                              Object.entries(repeatItems).reduce(
-                                (next, [productId, quantity]) => ({
-                                  ...next,
-                                  [productId]:
-                                    (next[productId] || 0) + quantity,
-                                }),
-                                { ...current }
-                              )
-                            );
-                            setShowCheckout(false);
-                            setShowCart(true);
-                            setActiveTab("Cart");
-                            setNotice(
-                              Object.keys(repeatItems).length
-                                ? "Items from this order were added to your cart."
-                                : "Those items are no longer available in this demo catalog."
-                            );
-                          }}
+                          onClick={() => repeatOrder(order)}
                         >
                           Order again →
                         </button>
@@ -1022,13 +933,7 @@ export default function CustomerDashboard() {
                   <input
                     type="email"
                     value={profileForm.email}
-                    onChange={(event) =>
-                      setProfileForm((current) => ({
-                        ...current,
-                        email: event.target.value,
-                      }))
-                    }
-                    required
+                    readOnly
                   />
                 </label>
                 <label>
@@ -1043,6 +948,9 @@ export default function CustomerDashboard() {
                       }))
                     }
                     placeholder="Add a contact number"
+                    maxLength={10}
+                    pattern="[0-9]{10}"
+                    required
                   />
                 </label>
                 <button className="customer-primary-button" type="submit">

@@ -1,4 +1,6 @@
 import { NavLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/useAuth";
 
 const menuItems = [
   { label: "Dashboard", path: "/owner/dashboard", icon: "⌂" },
@@ -10,6 +12,9 @@ const menuItems = [
 ];
 
 export default function OwnerSidebar() {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
   return (
     <aside className="owner-sidebar">
       <div className="owner-brand">
@@ -48,7 +53,10 @@ export default function OwnerSidebar() {
           </div>
         </div>
 
-        <button className="owner-logout">
+        <button className="owner-logout" onClick={() => {
+          logout();
+          navigate("/login");
+        }}>
           <span>↪</span>
           Logout
         </button>

@@ -1,6 +1,4 @@
 const mongoose = require("mongoose");
-const Shop = require("./Shop");
-
 const productSchema = new mongoose.Schema(
     {
 
@@ -11,29 +9,36 @@ const productSchema = new mongoose.Schema(
         },
 
         name: {
-
-            required: [true, " product name is required"],
             type: String,
-            ref: Shop
+            required: [true, "Product name is required"],
+            trim: true,
         },
 
         image: {
 
             type: String,
-    default : " "
+            default: "",
+            trim: true,
         },
 
         price: {
 
             type: Number,
-            require: [true, " product price is required"],
+            required: [true, "Product price is required"],
             min: 0
         },
         
-          description: {
-      type: String,
-      trim: true,
-    },
+        description: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+
+        category: {
+            type: String,
+            trim: true,
+            default: "",
+        },
 
         isAvailable: {
 

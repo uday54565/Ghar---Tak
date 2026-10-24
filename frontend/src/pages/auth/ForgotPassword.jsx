@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "../../styles/customer-login.css";
+import { authApi, getErrorMessage } from "../../services/api";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -21,32 +22,14 @@ const handleSubmit = async (event) => {
   }
 
   try {
-    const response = await fetch(
-      "http://localhost:5000/api/auth/forgot-password",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: normalizedEmail,
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      setError(data.message || "Unable to process your request.");
-      return;
-    }
+    const { data } = await authApi.forgotPassword({ email: normalizedEmail });
 
     setMessage(
       data.message ||
         "If an account exists with this email, a reset link will be sent."
     );
-  } catch (error) {
-    setError("Unable to connect to the server. Please try again.");
+  } catch (requestError) {
+    setError(getErrorMessage(requestError));
   }
 };
 

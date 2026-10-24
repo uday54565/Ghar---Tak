@@ -1,66 +1,111 @@
-import { Routes, Route } from "react-router-dom";
+
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import OwnerSettings from "./pages/owner/OwnerSettings";
 import OwnerShop from "./pages/owner/OwnerShop";
 import OwnerCategories from "./pages/owner/OwnerCategories";
 import OwnerProducts from "./pages/owner/OwnerProducts";
 import OwnerOrders from "./pages/owner/OwnerOrders";
+
 import Home from "./pages/home/Home";
 import ShopOwnerLogin from "./pages/auth/ShopOwnerLogin";
-import CustomerLogin from "./pages/auth/CustomerLogin";
 import Register from "./pages/auth/Register";
 import OwnerDashboard from "./pages/owner/OwnerDashboard";
 import CustomerDashboard from "./pages/home/CustomerDashboard";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
-
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
   return (
     <Routes>
-
-      <Route
-  path="/customer/forgot-password"
-  element={<ForgotPassword />}
-
-  
-/>
-<Route
-  path="/reset-password"
-  element={<ResetPassword />}
-/>
-      <Route
-  path="/owner/settings"
-  element={<OwnerSettings />}/>
-
-      <Route path="/owner/shop" element={<OwnerShop />} />
-
-      <Route
-  path="/owner/categories"
-  element={<OwnerCategories />}/>
-
-      <Route
-  path="/owner/products"
-  element={<OwnerProducts />}/>
-
-      <Route path="/owner/orders" element={<OwnerOrders />} />
-      {/* Public */}
+      {/* Public pages */}
       <Route path="/" element={<Home />} />
 
-      {/* Customer / General Login */}
+      {/* Common login page */}
       <Route path="/login" element={<ShopOwnerLogin />} />
-      <Route path="/customer/login" element={<CustomerLogin />} />
-      <Route path="/customer/register" element={<Register />} />
-      <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-
-      {/* Shop Owner Login */}
       <Route path="/owner/login" element={<ShopOwnerLogin />} />
 
-      {/* Register */}
-      <Route path="/register" element={<Register />} />
+      {/* Redirect old customer login URL to common login */}
+      <Route
+        path="/customer/login"
+        element={<Navigate to="/login" replace />}
+      />
 
-      {/* Owner Dashboard */}
-      <Route path="/owner/dashboard" element={<OwnerDashboard />} />
+      {/* Registration */}
+      <Route path="/register" element={<Register />} />
+      <Route path="/customer/register" element={<Register />} />
+
+      {/* Password reset */}
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route
+        path="/customer/forgot-password"
+        element={<Navigate to="/forgot-password" replace />}
+      />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Customer */}
+      <Route
+        path="/customer/dashboard"
+        element={
+          <ProtectedRoute role="user">
+            <CustomerDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Shop owner */}
+      <Route
+        path="/owner/dashboard"
+        element={
+          <ProtectedRoute role="shop_owner">
+            <OwnerDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner/shop"
+        element={
+          <ProtectedRoute role="shop_owner">
+            <OwnerShop />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner/products"
+        element={
+          <ProtectedRoute role="shop_owner">
+            <OwnerProducts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner/categories"
+        element={
+          <ProtectedRoute role="shop_owner">
+            <OwnerCategories />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner/orders"
+        element={
+          <ProtectedRoute role="shop_owner">
+            <OwnerOrders />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner/settings"
+        element={
+          <ProtectedRoute role="shop_owner">
+            <OwnerSettings />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Unknown URLs return to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

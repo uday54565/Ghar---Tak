@@ -44,6 +44,25 @@ const register = async (req, res) => {
       });
     }
 
+    if (role === "shop_owner" && (!shopName?.trim() || !shopAddress?.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Shop name and shop address are required for shop owner registration",
+      });
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      return res.status(400).json({ success: false, message: "Enter a valid email address" });
+    }
+
+    if (!/^\d{10}$/.test(phone.trim())) {
+      return res.status(400).json({ success: false, message: "Enter a valid 10-digit phone number" });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+    }
+
     // Password confirmation
     if (password !== confirmPassword) {
       return res.status(400).json({
@@ -60,25 +79,82 @@ const register = async (req, res) => {
       });
     }
 
-    // Check existing email
-    const existingEmail = await User.findOne({
-      email: email.toLowerCase(),
-    });
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPhone = phone.trim();
+    const existingEmail = await User.findOne({ email: normalizedEmail });
+    const existingPhone = await User.findOne({ phone: normalizedPhone });
 
-    if (existingEmail) {
+    if (existingEmail?.isVerified) {
       return res.status(409).json({
         success: false,
         message: "Email already registered",
       });
     }
 
-    // Check existing phone
-    const existingPhone = await User.findOne({ phone });
-
-    if (existingPhone) {
+    if (existingPhone?.isVerified) {
       return res.status(409).json({
         success: false,
         message: "Phone number already registered",
+      });
+    }
+
+    if (
+      existingEmail &&
+      existingPhone &&
+      !existingEmail._id.equals(existingPhone._id)
+    ) {
+      return res.status(409).json({
+        success: false,
+        message: "Email and phone number are associated with different registrations",
+      });
+    }
+
+    const pendingRegistration = existingEmail || existingPhone;
+
+    if (pendingRegistration) {
+      const otp = generateOTP();
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      try {
+        await sendEmail({
+          to: normalizedEmail,
+          subject: "GHAR TAK - Email Verification OTP",
+          text: `Your GHAR TAK verification OTP is ${otp}. It expires in 5 minutes. Do not share this OTP with anyone.`,
+          html: `
+            <h2>GHAR TAK Email Verification</h2>
+            <p>Your verification OTP is:</p>
+            <h1>${otp}</h1>
+            <p>This OTP expires in 5 minutes.</p>
+            <p>Do not share this code with anyone.</p>
+          `,
+        });
+      } catch (emailError) {
+        console.error("OTP email sending failed:", emailError);
+        return res.status(502).json({
+          success: false,
+          message: "Could not send verification email. Please try again.",
+        });
+      }
+
+      pendingRegistration.name = name.trim();
+      pendingRegistration.email = normalizedEmail;
+      pendingRegistration.phone = normalizedPhone;
+      pendingRegistration.password = hashedPassword;
+      pendingRegistration.role = role || "user";
+      pendingRegistration.pendingShopName =
+        role === "shop_owner" ? shopName.trim() : null;
+      pendingRegistration.pendingShopAddress =
+        role === "shop_owner" ? shopAddress.trim() : null;
+      pendingRegistration.emailOtpHash = hashOTP(otp);
+      pendingRegistration.emailOtpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      pendingRegistration.emailOtpAttempts = 0;
+      pendingRegistration.emailOtpLastSentAt = new Date();
+      await pendingRegistration.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "Updated pending registration. A new OTP was sent to your email.",
+        email: normalizedEmail,
       });
     }
 
@@ -95,8 +171,8 @@ const register = async (req, res) => {
     // Create unverified user and save OTP
     const user = await User.create({
       name: name.trim(),
-      email: email.trim().toLowerCase(),
-      phone,
+      email: normalizedEmail,
+      phone: normalizedPhone,
       password: hashedPassword,
       role: role || "user",
       isVerified: false,
@@ -169,7 +245,7 @@ const verifyEmailOtp = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({
+      return res.status(400).json({
         success: false,
         message: "Registration not found",
       });
@@ -245,6 +321,63 @@ const verifyEmailOtp = async (req, res) => {
   }
 };
 
+const resendEmailOtp = async (req, res) => {
+  try {
+    const email = req.body.email?.trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Registration not found" });
+    }
+    if (user.isVerified) {
+      return res.status(200).json({ success: true, message: "Email is already verified" });
+    }
+    if (
+      user.emailOtpLastSentAt &&
+      Date.now() - user.emailOtpLastSentAt.getTime() < 60 * 1000
+    ) {
+      return res.status(429).json({
+        success: false,
+        message: "Please wait one minute before requesting another verification code",
+      });
+    }
+
+    const otp = generateOTP();
+    user.emailOtpHash = hashOTP(otp);
+    user.emailOtpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    user.emailOtpAttempts = 0;
+    user.emailOtpLastSentAt = new Date();
+    await user.save();
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "GHAR TAK - Email Verification OTP",
+        text: `Your GHAR TAK verification OTP is ${otp}. It expires in 5 minutes. Do not share it.`,
+        html: `<h2>GHAR TAK Email Verification</h2><p>Your verification OTP is:</p><h1>${otp}</h1><p>This code expires in 5 minutes.</p>`,
+      });
+    } catch (emailError) {
+      console.error("Verification OTP resend failed:", emailError);
+      user.emailOtpHash = null;
+      user.emailOtpExpiresAt = null;
+      user.emailOtpLastSentAt = null;
+      await user.save();
+      return res.status(502).json({
+        success: false,
+        message: "Could not send verification email. Please try again.",
+      });
+    }
+
+    return res.status(200).json({ success: true, message: "A new verification code was sent" });
+  } catch (error) {
+    console.error("Resend verification OTP error:", error);
+    return res.status(500).json({ success: false, message: "Unable to resend verification code" });
+  }
+};
+
 
 // =========================
 // LOGIN
@@ -274,6 +407,13 @@ const login = async (req, res) => {
         message: "Invalid credentials",
       });
     }
+
+    // if (user.isVerified) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Please verify your email before logging in",
+    //   });
+    // }
 
     // Check account lock
     if (user.lockUntil && user.lockUntil > new Date()) {
@@ -358,13 +498,13 @@ const forgotPassworrd  =  async (req,res) => {
 
   try{
 
-const email = req.body.email?.trim().toLowerCase();  
+const email = req.body.email?.trim().toLowerCase();
 
   if(!email){
-      return res.status(404).json({
+      return res.status(400).json({
 
         success : false,
-        message : " email is required"
+        message : "Email is required"
       })
     }
 
@@ -380,15 +520,10 @@ const email = req.body.email?.trim().toLowerCase();
       "If an account exists with this email, a reset link will be sent.";
 
 
-    if( !user){
-
-      return res.status(404).json({
-
-        success : false,
-        message : " Email not registerd"
-      })
+    if (!user) {
+      return res.status(200).json({ success: true, message: responseMessage });
     }
- 
+
     const cooldownMs = 60 * 1000;
 
     if (
@@ -479,11 +614,11 @@ const resetPassword = async ( req , res) => {
   }
 
 
-  if( newPassword != confirmPassword){
+  if( newPassword !== confirmPassword){
     return res.status(400).json({
 
       success : false,
-      message : " passwoed is not matching"
+      message : "Passwords do not match"
     });
 
   }
@@ -492,7 +627,7 @@ const resetPassword = async ( req , res) => {
     return res.status(400).json({
 
       success : false,
-      message : " make Your Pass Strong",
+      message : "Password must be between 8 and 15 characters",
     });
   }
 
@@ -502,10 +637,10 @@ const resetPassword = async ( req , res) => {
       .digest("hex");
 
   const user = await User.findOne({
-     
+
      resetTokenHash: tokenHash,
       resetTokenExpiresAt: { $gt: new Date() },
-       
+
   });
 
   if( !user){
@@ -529,14 +664,6 @@ const resetPassword = async ( req , res) => {
 
     await user.save();
 
-    const savedUser = await User.findById(user._id).select("+password");
-
-console.log("Password saved:", Boolean(savedUser?.password));
-console.log(
-  "New password matches:",
-  await bcrypt.compare(newPassword, savedUser.password)
-);
-
     return res.status(200).json({
       success: true,
       message: "Password reset successful. Please log in.",
@@ -544,21 +671,52 @@ console.log(
 
   }
   catch ( error) {
-    
+
      console.error("Reset password error:", error);
 
     return res.status(500).json({
       success: false,
       message: "Server error while resetting password",
     });
-  
+
   }
 }
+
+const updatePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Current password, new password, and confirmation are required",
+      });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ success: false, message: "Passwords do not match" });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+    }
+
+    const user = await User.findById(req.user._id).select("+password");
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
+      return res.status(401).json({ success: false, message: "Current password is incorrect" });
+    }
+    user.password = await bcrypt.hash(newPassword, 12);
+    await user.save();
+    return res.status(200).json({ success: true, message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Update password error:", error);
+    return res.status(500).json({ success: false, message: "Unable to update password" });
+  }
+};
 
 module.exports = {
   register,
   login,
   verifyEmailOtp,
+  resendEmailOtp,
   resetPassword,
-  forgotPassworrd
-};                                                                                    
+  forgotPassworrd,
+  updatePassword,
+};

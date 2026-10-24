@@ -6,15 +6,11 @@ const {
 } = require("../middleware/auth.middleware");
 
 const router = express.Router();
+const { getProfile, updateProfile } = require("../controllers/user.controller");
 
 // Any logged-in user
-router.get("/profile", protect, (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Profile accessed successfully",
-    user: req.user,
-  });
-});
+router.get("/profile", protect, getProfile);
+router.patch("/profile", protect, updateProfile);
 
 // Only customers
 router.get("/customer-only", protect, authorize("user"), (req, res) => {

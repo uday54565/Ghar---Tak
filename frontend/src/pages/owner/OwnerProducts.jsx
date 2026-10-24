@@ -1,63 +1,22 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import OwnerSidebar from "../../components/owner/OwnerSidebar";
 import OwnerHeader from "../../components/owner/OwnerHeader";
 import "../../styles/owner-dashboard.css";
-
-const categories = [
-  "All Categories",
-  "Grocery",
-  "Bakery",
-  "Dairy",
-  "Beverages",
-];
-
-const initialProducts = [
-  {
-    id: 1,
-    name: "Basmati Rice",
-    category: "Grocery",
-    price: 220,
-    available: true,
-  },
-  {
-    id: 2,
-    name: "Aashirvaad Atta",
-    category: "Grocery",
-    price: 280,
-    available: true,
-  },
-  {
-    id: 3,
-    name: "Fresh Milk",
-    category: "Dairy",
-    price: 60,
-    available: true,
-  },
-  {
-    id: 4,
-    name: "Brown Bread",
-    category: "Bakery",
-    price: 50,
-    available: false,
-  },
-  {
-    id: 5,
-    name: "Mango Juice",
-    category: "Beverages",
-    price: 90,
-    available: true,
-  },
-];
+import { categoryApi, getErrorMessage, productApi } from "../../services/api";
 
 const emptyForm = {
   name: "",
-  category: "Grocery",
+  category: "",
   price: "",
   available: true,
 };
 
 function OwnerProducts() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] =
     useState("All Categories");
@@ -65,6 +24,36 @@ function OwnerProducts() {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [form, setForm] = useState(emptyForm);
+
+  const loadProducts = async () => {
+    try {
+      const [productResponse, categoryResponse] = await Promise.all([
+        productApi.mine(),
+        categoryApi.list(),
+      ]);
+      const ownerProducts = productResponse.data.products.map((product) => ({
+          ...product,
+          id: product._id,
+          available: product.isAvailable,
+          category: product.category || "",
+        }));
+      setProducts(ownerProducts);
+      setCategories([
+        ...new Set([
+          ...categoryResponse.data.categories.map((category) => category.name),
+          ...ownerProducts.map((product) => product.category).filter(Boolean),
+        ]),
+      ]);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void Promise.resolve().then(loadProducts);
+  }, []);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -118,59 +107,47 @@ const unavailableProducts = totalProducts - availableProducts;
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.name.trim() || !form.price) {
       return;
     }
 
-    if (editingProduct) {
-      setProducts((currentProducts) =>
-        currentProducts.map((product) =>
-          product.id === editingProduct.id
-            ? {
-                ...product,
-                name: form.name.trim(),
-                category: form.category,
-                price: Number(form.price),
-                available: form.available,
-              }
-            : product
-        )
-      );
-    } else {
-      const newProduct = {
-        id: Date.now(),
+    setError("");
+    setSaving(true);
+    try {
+      const details = {
         name: form.name.trim(),
         category: form.category,
         price: Number(form.price),
-        available: form.available,
+        isAvailable: form.available,
       };
-
-      setProducts((currentProducts) => [
-        newProduct,
-        ...currentProducts,
-      ]);
+      if (editingProduct) {
+        await productApi.update(editingProduct.id, details);
+      } else {
+        await productApi.create(details);
+      }
+      await loadProducts();
+      closeModal();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
     }
-
-    closeModal();
   };
 
-  const toggleAvailability = (productId) => {
-    setProducts((currentProducts) =>
-      currentProducts.map((product) =>
-        product.id === productId
-          ? {
-              ...product,
-              available: !product.available,
-            }
-          : product
-      )
-    );
+  const toggleAvailability = async (product) => {
+    setError("");
+    try {
+      await productApi.update(product.id, { isAvailable: !product.available });
+      await loadProducts();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    }
   };
 
-  const deleteProduct = (productId) => {
+  const deleteProduct = async (productId) => {
     const product = products.find(
       (item) => item.id === productId
     );
@@ -187,11 +164,13 @@ const unavailableProducts = totalProducts - availableProducts;
       return;
     }
 
-    setProducts((currentProducts) =>
-      currentProducts.filter(
-        (item) => item.id !== productId
-      )
-    );
+    setError("");
+    try {
+      await productApi.remove(productId);
+      await loadProducts();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    }
   };
 
   return (
@@ -202,6 +181,8 @@ const unavailableProducts = totalProducts - availableProducts;
         <OwnerHeader />
 
         <section className="owner-content">
+          {error && <p className="register-error" role="alert">{error}</p>}
+          {loading && <p role="status">Loading products...</p>}
           <div className="panel-header">
           <div className="product-summary-grid">
   <article className="product-summary-card">
@@ -279,6 +260,7 @@ const unavailableProducts = totalProducts - availableProducts;
                 setCategoryFilter(e.target.value)
               }
             >
+              <option value="All Categories">All Categories</option>
               {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -328,7 +310,7 @@ const unavailableProducts = totalProducts - availableProducts;
                             type="checkbox"
                             checked={product.available}
                             onChange={() =>
-                              toggleAvailability(product.id)
+                              toggleAvailability(product)
                             }
                           />
 
@@ -447,6 +429,7 @@ const unavailableProducts = totalProducts - availableProducts;
                     value={form.category}
                     onChange={handleInputChange}
                   >
+                    <option value="">No category</option>
                     {categories
                       .filter(
                         (category) =>
@@ -518,8 +501,11 @@ const unavailableProducts = totalProducts - availableProducts;
                 <button
                   type="submit"
                   className="primary-action-button"
+                  disabled={saving}
                 >
-                  {editingProduct
+                  {saving
+                    ? "Saving..."
+                    : editingProduct
                     ? "Save Changes"
                     : "Add Product"}
                 </button>

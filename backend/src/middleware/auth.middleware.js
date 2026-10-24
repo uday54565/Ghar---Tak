@@ -24,7 +24,9 @@ const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Get current user from DB
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id).select(
+      "name email phone role isVerified addresses wishlist notificationPreferences createdAt"
+    );
 
     if (!user) {
       return res.status(401).json({
