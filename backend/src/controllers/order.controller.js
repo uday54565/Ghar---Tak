@@ -1,8 +1,8 @@
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
-const shop = require("../models/Shop");
 const Shop = require("../models/Shop");
+const Category = require("../models/Category");
 
 const getProductAvailability = (product) => {
   if (!product) return false;
@@ -47,6 +47,14 @@ const createOrder = async (req, res) => {
       });
     }
 
+    const shop = await Shop.findById(cart.shop);
+    if (!shop || !shop.isOpen) {
+      return res.status(400).json({
+        success: false,
+        message: "Shop is currently closed",
+      });
+    }
+
     // 4. Create order items using product snapshots
     const orderItems = [];
 
@@ -67,6 +75,20 @@ const createOrder = async (req, res) => {
         });
       }
 
+      if (
+        product.category &&
+        (await Category.exists({
+          shop: product.shop,
+          name: { $regex: `^${product.category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, $options: "i" },
+          isActive: false,
+        }))
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: `${product.category} products are currently unavailable`,
+        });
+      }
+
       orderItems.push({
         product: product._id,
         name: product.name,
@@ -74,6 +96,13 @@ const createOrder = async (req, res) => {
         quantity: cartItem.quantity,
       });
     }
+
+    const subtotal = orderItems.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
+    const deliveryFee = subtotal === 0 || subtotal >= 499 ? 0 : 25;
+    const discount = cart.discount || 0;
 
     // 5. Create order
     const order = await Order.create({
@@ -85,13 +114,13 @@ const createOrder = async (req, res) => {
 
       deliveryAddress: deliveryAddress.trim(),
 
-      subtotal: cart.subtotal,
+      subtotal,
 
-      deliveryFee: cart.deliveryFee,
+      deliveryFee,
 
-      discount: cart.discount,
+      discount,
 
-      totalPrice: cart.totalPrice,
+      totalPrice: subtotal + deliveryFee - discount,
 
       paymentMethod: "cod",
 
@@ -141,6 +170,8 @@ const getShopOrders = async(req,res) => {
         const orders = await Order.find({
             shop : shop._id,
         })
+            .populate("user", "name phone")
+            .sort({ createdAt: -1 });
 
         return res.status(200).json({
   success: true,

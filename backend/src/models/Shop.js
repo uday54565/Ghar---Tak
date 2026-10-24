@@ -32,6 +32,22 @@ const shopSchema = new mongoose.Schema(
       trim: true,
     },
 
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    openingTime: {
+      type: String,
+      default: "08:00",
+    },
+
+    closingTime: {
+      type: String,
+      default: "21:00",
+    },
+
     isOpen: {
       type: Boolean,
       default: true,

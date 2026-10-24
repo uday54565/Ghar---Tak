@@ -5,10 +5,12 @@ const {
      
 }  = require("../middleware/auth.middleware");
 
-const { getMyShop} = require("../controllers/shop.controller")
+const { getShops, getMyShop, updateMyShop} = require("../controllers/shop.controller")
 
 const router = express.Router();
 
+router.get("/", getShops);
 router.get("/my-shop",protect,authorize("shop_owner"),getMyShop);
+router.patch("/my-shop",protect,authorize("shop_owner"),updateMyShop);
 
 module.exports = router;

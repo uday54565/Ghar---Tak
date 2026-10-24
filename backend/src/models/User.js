@@ -63,6 +63,26 @@ resetOtpVerifiedUntil: { type: Date, default: null },
 pendingShopName: { type: String, default: null },
 pendingShopAddress: { type: String, default: null },
 
+addresses: {
+  type: [
+    {
+      label: { type: String, required: true, trim: true },
+      details: { type: String, required: true, trim: true },
+    },
+  ],
+  default: [],
+},
+
+wishlist: {
+  type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+  default: [],
+},
+
+notificationPreferences: {
+  newOrders: { type: Boolean, default: true },
+  orderUpdates: { type: Boolean, default: true },
+},
+
 resetTokenHash: {
   type: String,
   default: null

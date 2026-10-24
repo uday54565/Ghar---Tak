@@ -10,7 +10,8 @@ const productRouter = require("./routes/product.routes");
 
 const orderRouter = require("./routes/order.router");
 const cartRouter = require("./routes/cart.routes");
-const { generalLimiter} = require("./middleware/rateLimiter")
+const categoryRouter = require("./routes/category.routes");
+const { generalLimiter } = require("./middleware/rateLimiter");
 
 
 const app = express();
@@ -18,7 +19,7 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (process.env.FRONTEND_URL || "http://localhost:5173").split(","),
     credentials: true,
   })
 );
@@ -43,7 +44,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // Routes
-// Routes
+app.use("/api", generalLimiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 
@@ -54,8 +55,7 @@ app.use("/api/products" , productRouter);
 app.use("/api/cart",cartRouter);
 
 app.use("/api/orders",orderRouter);
-
-app.use(generalLimiter);
+app.use("/api/categories", categoryRouter);
 
 
 

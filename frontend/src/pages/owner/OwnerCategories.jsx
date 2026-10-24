@@ -1,38 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import OwnerSidebar from "../../components/owner/OwnerSidebar";
 import OwnerHeader from "../../components/owner/OwnerHeader";
 import "../../styles/owner-dashboard.css";
-
-const initialCategories = [
-  {
-    id: 1,
-    name: "Grocery",
-    description: "Daily grocery and household essentials",
-    productCount: 24,
-    active: true,
-  },
-  {
-    id: 2,
-    name: "Bakery",
-    description: "Fresh bread, cakes and bakery items",
-    productCount: 12,
-    active: true,
-  },
-  {
-    id: 3,
-    name: "Dairy",
-    description: "Milk, curd, butter and dairy products",
-    productCount: 8,
-    active: true,
-  },
-  {
-    id: 4,
-    name: "Beverages",
-    description: "Juices, soft drinks and other beverages",
-    productCount: 10,
-    active: false,
-  },
-];
+import { categoryApi, getErrorMessage } from "../../services/api";
 
 const emptyForm = {
   name: "",
@@ -41,11 +11,35 @@ const emptyForm = {
 };
 
 function OwnerCategories() {
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [form, setForm] = useState(emptyForm);
+
+  const loadCategories = async () => {
+    try {
+      const { data } = await categoryApi.list();
+      setCategories(
+        data.categories.map((category) => ({
+          ...category,
+          id: category._id,
+          active: category.isActive,
+        }))
+      );
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void Promise.resolve().then(loadCategories);
+  }, []);
 
   const filteredCategories = useMemo(() => {
     return categories.filter((category) =>
@@ -77,68 +71,49 @@ function OwnerCategories() {
     setForm(emptyForm);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!form.name.trim()) return;
 
-    if (editingCategory) {
-      setCategories((currentCategories) =>
-        currentCategories.map((category) =>
-          category.id === editingCategory.id
-            ? {
-                ...category,
-                name: form.name.trim(),
-                description: form.description.trim(),
-                active: form.active,
-              }
-            : category
-        )
-      );
-    } else {
-      const newCategory = {
-        id: Date.now(),
+    setSaving(true);
+    setError("");
+    try {
+      const details = {
         name: form.name.trim(),
         description: form.description.trim(),
-        productCount: 0,
-        active: form.active,
+        isActive: form.active,
       };
-
-      setCategories((currentCategories) => [
-        ...currentCategories,
-        newCategory,
-      ]);
+      if (editingCategory) {
+        await categoryApi.update(editingCategory.id, details);
+      } else {
+        await categoryApi.create(details);
+      }
+      await loadCategories();
+      closeModal();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
     }
-
-    closeModal();
   };
 
-  const toggleCategoryStatus = (categoryId) => {
-    setCategories((currentCategories) =>
-      currentCategories.map((category) =>
-        category.id === categoryId
-          ? {
-              ...category,
-              active: !category.active,
-            }
-          : category
-      )
-    );
+  const toggleCategoryStatus = async (category) => {
+    setError("");
+    try {
+      await categoryApi.update(category.id, { isActive: !category.active });
+      await loadCategories();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    }
   };
 
-  const deleteCategory = (categoryId) => {
+  const deleteCategory = async (categoryId) => {
     const category = categories.find(
       (item) => item.id === categoryId
     );
 
     if (!category) return;
-
-    if (category.productCount > 0) {
-      window.alert(
-        `"${category.name}" has ${category.productCount} products. Move or remove those products before deleting this category.`
-      );
-      return;
-    }
 
     const confirmed = window.confirm(
       `Delete "${category.name}"? This action cannot be undone.`
@@ -146,9 +121,13 @@ function OwnerCategories() {
 
     if (!confirmed) return;
 
-    setCategories((currentCategories) =>
-      currentCategories.filter((item) => item.id !== categoryId)
-    );
+    setError("");
+    try {
+      await categoryApi.remove(categoryId);
+      await loadCategories();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    }
   };
 
   return (
@@ -159,6 +138,8 @@ function OwnerCategories() {
         <OwnerHeader />
 
         <section className="owner-content">
+          {error && <p className="register-error" role="alert">{error}</p>}
+          {loading && <p role="status">Loading categories...</p>}
           <div className="panel-header">
             <div>
               <p className="panel-label">CATEGORY MANAGEMENT</p>
@@ -255,7 +236,7 @@ function OwnerCategories() {
                       <button
                         type="button"
                         onClick={() =>
-                          toggleCategoryStatus(category.id)
+                          toggleCategoryStatus(category)
                         }
                       >
                         {category.active
@@ -410,8 +391,11 @@ function OwnerCategories() {
                 <button
                   type="submit"
                   className="primary-action-button"
+                  disabled={saving}
                 >
-                  {editingCategory
+                  {saving
+                    ? "Saving..."
+                    : editingCategory
                     ? "Save Changes"
                     : "Add Category"}
                 </button>

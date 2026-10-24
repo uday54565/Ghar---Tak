@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import OwnerSidebar from "../../components/owner/OwnerSidebar";
 import OwnerHeader from "../../components/owner/OwnerHeader";
 import "../../styles/owner-dashboard.css";
+import { getErrorMessage, shopApi } from "../../services/api";
 
 const initialShop = {
-  name: "Sharma General Store",
-  description:
-    "Your local shop for groceries, daily essentials and household products.",
-  category: "Grocery",
-  phone: "9876543210",
-  address: "Main Market, Your Village, Uttar Pradesh",
+  name: "",
+  description: "",
+  category: "",
+  phone: "",
+  address: "",
   openingTime: "08:00",
   closingTime: "21:00",
   isOpen: true,
@@ -18,6 +18,33 @@ const initialShop = {
 function OwnerShop() {
   const [shop, setShop] = useState(initialShop);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const loadShop = async () => {
+    try {
+      const { data } = await shopApi.mine();
+      setShop({
+        name: data.shop.shopName,
+        description: data.shop.description || "",
+        category: data.shop.category || "",
+        phone: data.shop.phone,
+        address: data.shop.address,
+        openingTime: data.shop.openingTime || "08:00",
+        closingTime: data.shop.closingTime || "21:00",
+        isOpen: data.shop.isOpen,
+      });
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void Promise.resolve().then(loadShop);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,14 +66,29 @@ function OwnerShop() {
     setSaved(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    setSaved(true);
-
-    window.setTimeout(() => {
-      setSaved(false);
-    }, 2500);
+    setSaving(true);
+    setError("");
+    try {
+      const { data } = await shopApi.update({
+        shopName: shop.name,
+        description: shop.description,
+        category: shop.category,
+        phone: shop.phone,
+        address: shop.address,
+        openingTime: shop.openingTime,
+        closingTime: shop.closingTime,
+        isOpen: shop.isOpen,
+      });
+      setShop((current) => ({ ...current, name: data.shop.shopName }));
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2500);
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -57,6 +99,8 @@ function OwnerShop() {
         <OwnerHeader />
 
         <section className="owner-content">
+          {error && <p className="register-error" role="alert">{error}</p>}
+          {loading && <p role="status">Loading shop details...</p>}
           <div className="panel-header">
             <div>
               <p className="panel-label">SHOP MANAGEMENT</p>
@@ -215,8 +259,9 @@ function OwnerShop() {
                   <button
                     type="submit"
                     className="primary-action-button"
+                    disabled={saving || loading}
                   >
-                    Save Changes
+                    {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </div>

@@ -1,11 +1,13 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import apiRequest from "../../services/api";
+import { useAuth } from "../../context/useAuth";
+import { getErrorMessage } from "../../services/api";
 import "./ShopOwnerAuth.css";
 
 function ShopOwnerLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [role, setRole] = useState("user");
   const [emailOrPhone, setEmailOrPhone] = useState("");
@@ -14,8 +16,8 @@ function ShopOwnerLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError("");
 
     if (loading) return;
@@ -23,62 +25,26 @@ function ShopOwnerLogin() {
     setLoading(true);
 
     try {
-      const data = await apiRequest("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({
+      await login(
+        {
           emailOrPhone: emailOrPhone.trim(),
           password,
-        }),
-      });
-
-      if (!data.token || !data.user) {
-        throw new Error("Invalid login response from server.");
-      }
-
-      if (data.user.role !== role) {
-        throw new Error(
-          `This account is registered as ${
-            data.user.role === "shop_owner"
-              ? "Shop Owner"
-              : "Customer"
-          }. Please select the correct role.`
-        );
-      }
-
-      // Save authentication token and logged-in user
-      localStorage.setItem("token", data.token);
-      localStorage.setItem(
-        "ghartak-user",
-        JSON.stringify(data.user)
+        },
+        role
       );
 
-      // Redirect according to account role
-      if (data.user.role === "shop_owner") {
-        navigate("/owner/dashboard", { replace: true });
-      } else {
-        navigate("/customer/dashboard", { replace: true });
-      }
-    } catch (err) {
-      setError(err.message || "Login failed. Please try again.");
+      navigate(
+        role === "shop_owner"
+          ? "/owner/dashboard"
+          : "/customer/dashboard",
+        { replace: true }
+      );
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
     } finally {
       setLoading(false);
     }
-    const data = await apiRequest("/auth/login", {
-  method: "POST",
-  body: JSON.stringify({
-    emailOrPhone: emailOrPhone.trim(),
-    password,
-  }),
-});
-
-console.log("Login response:", {
-  success: data.success,
-  hasToken: Boolean(data.token),
-  user: data.user,
-});
   };
-
-  
 
   return (
     <main className="auth-page">
@@ -91,7 +57,9 @@ console.log("Login response:", {
 
         <div className="showcase-content">
           <span className="showcase-label">
-            {role === "user" ? "FOR CUSTOMERS" : "FOR SHOP OWNERS"}
+            {role === "user"
+              ? "FOR CUSTOMERS"
+              : "FOR SHOP OWNERS"}
           </span>
 
           <h1>
@@ -112,13 +80,18 @@ console.log("Login response:", {
       <section className="auth-form-section">
         <div className="auth-form-container">
           <div className="auth-heading">
-            <span className="mobile-auth-brand">GHAR TAK</span>
+            <span className="mobile-auth-brand">
+              GHAR TAK
+            </span>
 
             <h2>Welcome back</h2>
 
             <p>
               Sign in to your{" "}
-              {role === "user" ? "GHAR TAK account" : "shop account"}.
+              {role === "user"
+                ? "GHAR TAK account"
+                : "shop account"}
+              .
             </p>
           </div>
 
@@ -129,13 +102,17 @@ console.log("Login response:", {
             <div className="role-options">
               <button
                 type="button"
-                className={`role-card ${role === "user" ? "active" : ""}`}
+                className={`role-card ${
+                  role === "user" ? "active" : ""
+                }`}
                 onClick={() => {
                   setRole("user");
                   setError("");
                 }}
+                disabled={loading}
               >
                 <span className="role-icon">👤</span>
+
                 <span className="role-info">
                   <strong>Customer</strong>
                   <small>Order from local shops</small>
@@ -151,8 +128,10 @@ console.log("Login response:", {
                   setRole("shop_owner");
                   setError("");
                 }}
+                disabled={loading}
               >
                 <span className="role-icon">🏪</span>
+
                 <span className="role-info">
                   <strong>Shop Owner</strong>
                   <small>Manage your shop</small>
@@ -161,7 +140,10 @@ console.log("Login response:", {
             </div>
           </div>
 
-          <form className="auth-form" onSubmit={handleSubmit}>
+          <form
+            className="auth-form"
+            onSubmit={handleSubmit}
+          >
             <div className="input-group">
               <label htmlFor="loginEmail">
                 Email or Phone Number
@@ -173,7 +155,9 @@ console.log("Login response:", {
                   type="text"
                   placeholder="Enter email or phone number"
                   value={emailOrPhone}
-                  onChange={(e) => setEmailOrPhone(e.target.value)}
+                  onChange={(event) =>
+                    setEmailOrPhone(event.target.value)
+                  }
                   autoComplete="username"
                   required
                   disabled={loading}
@@ -183,7 +167,9 @@ console.log("Login response:", {
 
             <div className="input-group">
               <div className="password-label-row">
-                <label htmlFor="loginPassword">Password</label>
+                <label htmlFor="loginPassword">
+                  Password
+                </label>
 
                 <Link to="/forgot-password">
                   Forgot password?
@@ -196,7 +182,9 @@ console.log("Login response:", {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
                   autoComplete="current-password"
                   required
                   disabled={loading}
@@ -205,10 +193,15 @@ console.log("Login response:", {
                 <button
                   type="button"
                   className="password-toggle"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  aria-label={
-                    showPassword ? "Hide password" : "Show password"
+                  onClick={() =>
+                    setShowPassword((previous) => !previous)
                   }
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                  disabled={loading}
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
@@ -226,14 +219,16 @@ console.log("Login response:", {
               className="auth-submit"
               disabled={loading}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? "Signing in..." : "Login"}
               {!loading && <span>→</span>}
             </button>
           </form>
 
           <div className="auth-switch">
             Don't have an account?{" "}
-            <Link to="/register">Create account</Link>
+            <Link to="/register">
+              Create account
+            </Link>
           </div>
 
           <Link to="/" className="back-home">
