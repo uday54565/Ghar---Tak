@@ -15,6 +15,7 @@ const { generalLimiter } = require("./middleware/rateLimiter");
 
 
 const app = express();
+app.set("trust proxy", 1);
 
 // Middleware
 app.use(
@@ -44,7 +45,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // Routes
-app.use("/api", generalLimiter);
+// app.use("/api", generalLimiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 

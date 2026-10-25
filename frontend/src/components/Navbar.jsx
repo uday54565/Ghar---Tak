@@ -24,9 +24,9 @@ import { Link } from "react-router-dom";function Navbar() {
             Login
           </Link>
 
-          <Link to="/customer/register" className="nav-cta">
-            Get Started
-          </Link>
+         <Link to="/register" className="nav-cta">
+  Get Started
+</Link>
         </div>
 
       </div>

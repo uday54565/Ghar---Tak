@@ -178,7 +178,7 @@ export default function CustomerLogin() {
             </div>
 
             <Link
-              to="/customer/register"
+              to="/register"
               className="customer-signup-button"
             >
               Create a customer account
