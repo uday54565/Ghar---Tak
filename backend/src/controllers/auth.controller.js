@@ -20,22 +20,42 @@ const generateToken = (user) => {
   );
 };
 
+const completePendingShop = async (user) => {
+  if (user.role !== "shop_owner" || !user.pendingShopName) {
+    return;
+  }
+
+  const existingShop = await Shop.findOne({ owner: user._id });
+  if (!existingShop) {
+    await Shop.create({
+      owner: user._id,
+      shopName: user.pendingShopName,
+      phone: user.phone,
+      address: user.pendingShopAddress,
+    });
+  }
+
+  user.pendingShopName = null;
+  user.pendingShopAddress = null;
+  await user.save();
+};
+
 // =========================
 // REGISTER
 // =========================
 
 const register = async (req, res) => {
   try {
-   const {
-  name,
-  email,
-  phone,
-  password,
-  confirmPassword,
-  role,
-  shopName,
-  shopAddress,
-} = req.body;
+    const {
+      name,
+      email,
+      phone,
+      password,
+      confirmPassword,
+      role,
+      shopName,
+      shopAddress,
+    } = req.body;
     // Required fields
     if (!name || !email || !phone || !password || !confirmPassword) {
       return res.status(400).json({
@@ -84,91 +104,22 @@ const register = async (req, res) => {
     const existingEmail = await User.findOne({ email: normalizedEmail });
     const existingPhone = await User.findOne({ phone: normalizedPhone });
 
-    if (existingEmail?.isVerified) {
+    if (existingEmail) {
       return res.status(409).json({
         success: false,
         message: "Email already registered",
       });
     }
 
-    if (existingPhone?.isVerified) {
+    if (existingPhone) {
       return res.status(409).json({
         success: false,
         message: "Phone number already registered",
       });
     }
 
-    if (
-      existingEmail &&
-      existingPhone &&
-      !existingEmail._id.equals(existingPhone._id)
-    ) {
-      return res.status(409).json({
-        success: false,
-        message: "Email and phone number are associated with different registrations",
-      });
-    }
-
-    const pendingRegistration = existingEmail || existingPhone;
-
-    if (pendingRegistration) {
-      const otp = generateOTP();
-      const hashedPassword = await bcrypt.hash(password, 12);
-
-      try {
-        await sendEmail({
-          to: normalizedEmail,
-          subject: "GHAR TAK - Email Verification OTP",
-          text: `Your GHAR TAK verification OTP is ${otp}. It expires in 5 minutes. Do not share this OTP with anyone.`,
-          html: `
-            <h2>GHAR TAK Email Verification</h2>
-            <p>Your verification OTP is:</p>
-            <h1>${otp}</h1>
-            <p>This OTP expires in 5 minutes.</p>
-            <p>Do not share this code with anyone.</p>
-          `,
-        });
-      } catch (emailError) {
-        console.error("OTP email sending failed:", emailError);
-        return res.status(502).json({
-          success: false,
-          message: "Could not send verification email. Please try again.",
-        });
-      }
-
-      pendingRegistration.name = name.trim();
-      pendingRegistration.email = normalizedEmail;
-      pendingRegistration.phone = normalizedPhone;
-      pendingRegistration.password = hashedPassword;
-      pendingRegistration.role = role || "user";
-      pendingRegistration.pendingShopName =
-        role === "shop_owner" ? shopName.trim() : null;
-      pendingRegistration.pendingShopAddress =
-        role === "shop_owner" ? shopAddress.trim() : null;
-      pendingRegistration.emailOtpHash = hashOTP(otp);
-      pendingRegistration.emailOtpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-      pendingRegistration.emailOtpAttempts = 0;
-      pendingRegistration.emailOtpLastSentAt = new Date();
-      await pendingRegistration.save();
-
-      return res.status(200).json({
-        success: true,
-        message: "Updated pending registration. A new OTP was sent to your email.",
-        email: normalizedEmail,
-      });
-    }
-
-    // Hash password
-
-
-    // Generate email OTP
-    const otp = generateOTP();
-    const otpHash = hashOTP(otp);
-
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create unverified user and save OTP
     const user = await User.create({
       name: name.trim(),
       email: normalizedEmail,
@@ -176,44 +127,15 @@ const register = async (req, res) => {
       password: hashedPassword,
       role: role || "user",
       isVerified: false,
-
-      emailOtpHash: otpHash,
-      emailOtpExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
-      emailOtpAttempts: 0,
-      emailOtpLastSentAt: new Date(),
-
-      pendingShopName: role === "shop_owner" ? shopName : null,
-      pendingShopAddress: role === "shop_owner" ? shopAddress : null,
+      pendingShopName: role === "shop_owner" ? shopName.trim() : null,
+      pendingShopAddress: role === "shop_owner" ? shopAddress.trim() : null,
     });
 
-    // Send OTP to the registered email
-    try {
-      await sendEmail({
-        to: user.email,
-        subject: "GHAR TAK - Email Verification OTP",
-        text: `Your GHAR TAK verification OTP is ${otp}. It expires in 5 minutes. Do not share this OTP with anyone.`,
-        html: `
-          <h2>GHAR TAK Email Verification</h2>
-          <p>Your verification OTP is:</p>
-          <h1>${otp}</h1>
-          <p>This OTP expires in 5 minutes.</p>
-          <p>Do not share this code with anyone.</p>
-        `,
-      });
-    } catch (emailError) {
-      console.error("OTP email sending failed:", emailError);
-
-      await User.deleteOne({ _id: user._id });
-
-      return res.status(502).json({
-        success: false,
-        message: "Could not send verification email. Please try again.",
-      });
-    }
+    await completePendingShop(user);
 
     return res.status(201).json({
       success: true,
-      message: "OTP sent to your email. Please verify your email.",
+      message: "Registration successful. You can now log in.",
       email: user.email,
     });
 
@@ -222,7 +144,7 @@ const register = async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: "Server error during registration",
+      message: "Server error during registration. If your account was created, you can log in.",
     });
   }
 };
@@ -408,13 +330,6 @@ const login = async (req, res) => {
       });
     }
 
-    // if (user.isVerified) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: "Please verify your email before logging in",
-    //   });
-    // }
-
     // Check account lock
     if (user.lockUntil && user.lockUntil > new Date()) {
       return res.status(429).json({
@@ -457,6 +372,12 @@ const login = async (req, res) => {
         success: false,
         message: "Invalid credentials",
       });
+    }
+
+    try {
+      await completePendingShop(user);
+    } catch (shopError) {
+      console.error("Pending shop setup failed during login:", shopError);
     }
 
     // Successful login: reset failed attempts

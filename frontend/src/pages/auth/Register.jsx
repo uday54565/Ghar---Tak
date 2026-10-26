@@ -3,44 +3,20 @@ import { Link, useNavigate } from "react-router-dom";
 import "./ShopOwnerAuth.css";
 import { authApi, getErrorMessage } from "../../services/api";
 
-const PENDING_EMAIL_KEY = "ghartak-pending-verification-email";
-const PENDING_ROLE_KEY = "ghartak-pending-verification-role";
-
 function Register() {
   const navigate = useNavigate();
-  const [role, setRole] = useState(
-    () => localStorage.getItem(PENDING_ROLE_KEY) || "user"
-  );
+  const [role, setRole] = useState("user");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState(
-    () => localStorage.getItem(PENDING_EMAIL_KEY) || ""
-  );
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [shopName, setShopName] = useState("");
   const [shopAddress, setShopAddress] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-
-  const [otp, setOtp] = useState("");
-const [otpGenerated, setOtpGenerated] = useState(
-  () => Boolean(localStorage.getItem(PENDING_EMAIL_KEY))
-);
-const [otpVerified, setOtpVerified] = useState(false);
-const [otpMessage, setOtpMessage] = useState("");
-const [loading, setLoading] = useState(false);
-
-const editPendingRegistration = () => {
-  localStorage.removeItem(PENDING_EMAIL_KEY);
-  localStorage.removeItem(PENDING_ROLE_KEY);
-  setOtpGenerated(false);
-  setOtpVerified(false);
-  setOtp("");
-  setOtpMessage("");
-  setError("");
-};
+  const [loading, setLoading] = useState(false);
 
 const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,7 +34,7 @@ const handleSubmit = async (e) => {
 
     setLoading(true);
     try {
-      const { data } = await authApi.register({
+      await authApi.register({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         phone: phone.trim(),
@@ -69,56 +45,7 @@ const handleSubmit = async (e) => {
           ? { shopName: shopName.trim(), shopAddress: shopAddress.trim() }
           : {}),
       });
-      setOtpGenerated(true);
-      localStorage.setItem(PENDING_EMAIL_KEY, email.trim().toLowerCase());
-      localStorage.setItem(PENDING_ROLE_KEY, role);
-      setOtpVerified(false);
-      setOtp("");
-      setOtpMessage(data.message || "Verification code sent to your email.");
-    } catch (requestError) {
-      setError(getErrorMessage(requestError));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const verifyOtp = async () => {
-    setError("");
-    setOtpMessage("");
-    if (!/^\d{6}$/.test(otp)) {
-      setError("Enter the 6-digit verification code sent to your email.");
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data } = await authApi.verifyEmail({
-        email: email.trim().toLowerCase(),
-        otp,
-      });
-      setOtpVerified(true);
-      setOtpMessage(data.message || "Email verified. You can now log in.");
-      localStorage.removeItem(PENDING_EMAIL_KEY);
-      localStorage.removeItem(PENDING_ROLE_KEY);
-      window.setTimeout(
-        () => navigate(role === "shop_owner" ? "/owner/login" : "/customer/login"),
-        1200
-      );
-    } catch (requestError) {
-      setError(getErrorMessage(requestError));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resendOtp = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const { data } = await authApi.resendEmail({
-        email: email.trim().toLowerCase(),
-      });
-      setOtp("");
-      setOtpMessage(data.message);
+      navigate(role === "shop_owner" ? "/owner/login" : "/customer/login");
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -178,7 +105,6 @@ const handleSubmit = async (e) => {
                 type="button"
                 className={`role-card ${role === "user" ? "active" : ""}`}
                 onClick={() => setRole("user")}
-                disabled={otpGenerated}
               >
                 <span className="role-icon">👤</span>
 
@@ -194,7 +120,6 @@ const handleSubmit = async (e) => {
                   role === "shop_owner" ? "active" : ""
                 }`}
                 onClick={() => setRole("shop_owner")}
-                disabled={otpGenerated}
               >
                 <span className="role-icon">🏪</span>
 
@@ -205,21 +130,6 @@ const handleSubmit = async (e) => {
               </button>
             </div>
           </div>
-
-          {otpGenerated && (
-            <div className="pending-registration">
-              <p>
-                A registration for <strong>{email}</strong> is waiting for email
-                verification.
-              </p>
-              <button
-                type="button"
-                onClick={editPendingRegistration}
-              >
-                Edit email or account type
-              </button>
-            </div>
-          )}
 
           <form
             className="auth-form register-form"
@@ -278,7 +188,6 @@ const handleSubmit = async (e) => {
                   type="email"
                   placeholder="Enter your email"
                   value={email}
-                  readOnly={otpGenerated}
                   onChange={(event) => {
                     setEmail(event.target.value);
                     setError("");
@@ -302,64 +211,13 @@ const handleSubmit = async (e) => {
       maxLength="10"
       pattern="[0-9]{10}"
       value={phone}
-      readOnly={otpGenerated}
       required
       onChange={(event) => {
         setPhone(event.target.value.replace(/\D/g, "").slice(0, 10));
-        setOtpGenerated(false);
-        setOtpVerified(false);
-        setOtp("");
-        setOtpMessage("");
       }}
     />
   </div>
 </div>
-
-{otpGenerated && (
-<div className="input-group otp-section">
-  <label htmlFor="register-otp">Email verification code</label>
-  {otpGenerated && (
-    <>
-      <div className="input-wrapper otp-input-wrapper">
-        <input
-          id="register-otp"
-          type="text"
-          inputMode="numeric"
-          maxLength={6}
-          placeholder="Enter 6-digit OTP"
-          value={otp}
-          onChange={(e) => {
-            setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
-            setOtpVerified(false);
-          }}
-          aria-label="Enter OTP"
-        />
-      </div>
-
-      <button
-        type="button"
-        className="otp-verify-btn"
-        onClick={verifyOtp}
-        disabled={loading || otpVerified}
-      >
-        {loading ? "Verifying..." : otpVerified ? "Verified" : "Verify code"}
-      </button>
-      <button
-        type="button"
-        className="otp-verify-btn"
-        onClick={resendOtp}
-        disabled={loading || otpVerified}
-      >
-        Resend verification code
-      </button>
-
-      <p className="otp-message" role="status">
-        {otpMessage}
-      </p>
-    </>
-  )}
-</div>
-)}
 
             {/* Shop Address */}
             {role === "shop_owner" && (
@@ -447,12 +305,10 @@ const handleSubmit = async (e) => {
 
             {error && <p className="register-error" role="alert">{error}</p>}
 
-            <button type="submit" className="auth-submit" disabled={loading || otpVerified || otpGenerated}>
+            <button type="submit" className="auth-submit" disabled={loading}>
               {loading
-                ? "Sending..."
-                : otpGenerated
-                  ? "Verification code sent"
-                  : `Create ${role === "user" ? "Account" : "Shop Account"}`}
+                ? "Creating account..."
+                : `Create ${role === "user" ? "Account" : "Shop Account"}`}
               <span>→</span>
             </button>
           </form>
