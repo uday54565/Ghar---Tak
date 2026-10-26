@@ -1,31 +1,24 @@
 
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async ({ to, subject, text, html }) => {
-  const emailUser = process.env.EMAIL_USER?.trim();
-  const emailPassword = process.env.EMAIL_APP_PASSWORD?.replace(/\s/g, "");
-
-  if (!emailUser || !emailPassword) {
-    throw new Error(
-      "Email delivery is not configured. Set EMAIL_USER and EMAIL_APP_PASSWORD."
-    );
-  }
-
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: emailUser,
-      pass: emailPassword,
-    },
-  });
-
-  return transporter.sendMail({
-    from: `"GHAR TAK" <${emailUser}>`,
-    to,
+  const { data, error } = await resend.emails.send({
+    from: "GHAR TAK <onboarding@resend.dev>",
+    to: [to],
     subject,
     text,
     html,
   });
+
+  if (error) {
+    console.error("OTP email sending failed:", error);
+    throw new Error(error.message || "Failed to send email");
+  }
+
+  console.log("Email sent successfully:", data?.id);
+  return data;
 };
 
 module.exports = { sendEmail };
