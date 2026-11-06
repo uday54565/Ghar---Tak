@@ -228,7 +228,7 @@ export default function CustomerDashboard() {
   const cartProducts = products.filter(
     (product) => cart[product.id] > 0
   );
-  const deliveryFee = cartTotal >= 499 ? 0 : 25;
+  const deliveryFee = cartTotal > 30 ? 0 : 10;
   const orderTotal = cartTotal + deliveryFee;
 
   async function updateCart(productId, change) {
@@ -641,8 +641,8 @@ export default function CustomerDashboard() {
                   <span>To pay</span>
                   <strong>₹{orderTotal}</strong>
                 </div>
-                {cartTotal < 499 && (
-                  <small>Add items worth ₹{499 - cartTotal} more for free delivery.</small>
+                {cartTotal < 30 && (
+                  <small>Add items worth ₹{30 - cartTotal} more for free delivery.</small>
                 )}
                 <form onSubmit={placeOrder}>
                   <button
@@ -748,7 +748,7 @@ export default function CustomerDashboard() {
                   </button>
                   <small>
                     {deliveryFee
-                      ? "Free delivery on orders of ₹499 or more."
+                      ? "Free delivery on orders of ₹30 or more."
                       : "You unlocked free delivery!"}
                   </small>
                 </aside>
@@ -779,11 +779,7 @@ export default function CustomerDashboard() {
                   <article className="customer-product-card" key={product.id}>
                     <div className="customer-product-image">
                       {product.badge && <span className="customer-product-badge">{product.badge}</span>}
-                      {product.image ? (
-                        <img src={product.image} alt={product.name} />
-                      ) : (
-                        <span>{product.emoji}</span>
-                      )}
+                      <span>{product.emoji}</span>
                       <button
                         className="customer-favourite customer-favourite-active"
                         aria-label={`Remove ${product.name} from wishlist`}
@@ -1144,11 +1140,7 @@ export default function CustomerDashboard() {
                             {product.badge}
                           </span>
                         )}
-                        {product.image ? (
-                          <img src={product.image} alt={product.name} />
-                        ) : (
-                          <span>{product.emoji}</span>
-                        )}
+                        <span>{product.emoji}</span>
                         <button
                           className={`customer-favourite ${wishlist.includes(product.id) ? "customer-favourite-active" : ""}`}
                           aria-label={wishlist.includes(product.id) ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`}
