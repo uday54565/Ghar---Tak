@@ -101,7 +101,7 @@ const createOrder = async (req, res) => {
       (total, item) => total + item.price * item.quantity,
       0
     );
-    const deliveryFee = subtotal === 0 || subtotal >= 499 ? 0 : 25;
+    const deliveryFee = subtotal === 0 || subtotal > 30 ? 0 : 10;
     const discount = cart.discount || 0;
 
     // 5. Create order
