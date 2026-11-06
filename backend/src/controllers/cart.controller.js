@@ -40,6 +40,9 @@ const getCart = async (req, res) => {
         cart: null,
       });
     }
+    
+    calculateTotals(cart);
+    await cart.save();
 
     return res.status(200).json({
       success: true,
