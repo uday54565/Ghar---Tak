@@ -20,7 +20,7 @@ const calculateTotals = (cart) => {
   }, 0);
 
   cart.subtotal = subtotal;
-  cart.deliveryFee = subtotal === 0 || subtotal >= 499 ? 0 : 25;
+  cart.deliveryFee = subtotal === 0 || subtotal >= 30 ? 0 : 10;
 
   cart.totalPrice =
     subtotal + cart.deliveryFee - cart.discount;
